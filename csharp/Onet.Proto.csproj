@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <PackageId>Onet.Proto</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Onet</Authors>
+    <Description>Onet protobuf generated code</Description>
+    <RepositoryUrl>https://github.com/Team-Onet/onet-proto</RepositoryUrl>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 메시지 클래스 런타임 -->
+    <PackageReference Include="Google.Protobuf" Version="3.27.0" />
+    <!-- gRPC stub 컴파일용 API (런타임 transport는 서버/클라가 직접 선택) -->
+    <PackageReference Include="Grpc.Core.Api" Version="2.63.0" />
+  </ItemGroup>
+
+</Project>

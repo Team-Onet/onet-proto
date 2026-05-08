@@ -1,0 +1,3 @@
+# buf 코드 생성 결과물 (CI에서 생성됨)
+csharp/Generated/
+java/src/
