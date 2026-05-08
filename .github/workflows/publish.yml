@@ -62,6 +62,9 @@ jobs:
       - name: Generate code
         run: buf generate
 
+      - name: Inspect generated Java (version check)
+        run: head -30 gen/java/com/onet/common/v1/CommonProto.java
+
       - uses: actions/setup-java@v4
         with:
           java-version: '21'
