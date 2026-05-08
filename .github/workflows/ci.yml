@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-breaking:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for existing release tags
+        id: tags
+        run: |
+          if git ls-remote --tags origin | grep -q 'refs/tags/v'; then
+            echo "has_tags=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_tags=false" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: bufbuild/buf-action@v1
+        with:
+          lint: true
+          breaking: ${{ steps.tags.outputs.has_tags == 'true' }}
+          breaking_against: ${{ steps.tags.outputs.has_tags == 'true' && format('https://github.com/{0}/onet-proto.git#branch=main', github.repository_owner) || '' }}

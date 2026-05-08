@@ -5,9 +5,7 @@ modules:
 
 lint:
   use:
-    - DEFAULT
-  except:
-    - PACKAGE_VERSION_SUFFIX  # v1 suffix 강제 안 할 경우 예외처리 (지금은 쓰는 중)
+    - STANDARD
 
 breaking:
   use:
