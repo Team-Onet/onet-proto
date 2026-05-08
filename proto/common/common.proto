@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package onet.common.v1;
+
+option csharp_namespace = "Onet.Common.V1";
+option java_package = "com.onet.common.v1";
+option java_multiple_files = true;
+option java_outer_classname = "CommonProto";
+
+// 기본 연결 확인용 메시지
+message PingRequest {
+  string message = 1;
+}
+
+message PingResponse {
+  string message = 1;
+  int64 server_time_ms = 2;
+}
+
+service PingService {
+  rpc Ping(PingRequest) returns (PingResponse);
+}
