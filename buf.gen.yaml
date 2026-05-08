@@ -1,0 +1,11 @@
+version: v2
+
+plugins:
+  - remote: buf.build/protocolbuffers/csharp:v25.3
+    out: csharp/Generated
+  - remote: buf.build/grpc/csharp:v1.64.0
+    out: csharp/Generated
+  - remote: buf.build/protocolbuffers/java:v25.3
+    out: java/src/main/java
+  - remote: buf.build/grpc/java:v1.64.0
+    out: java/src/main/java
