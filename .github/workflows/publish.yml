@@ -71,8 +71,9 @@ jobs:
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           mvn deploy \
+            -f java/pom.xml \
             -Drevision=$VERSION \
-            -s .github/maven-settings.xml
+            -s ${{ github.workspace }}/.github/maven-settings.xml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
