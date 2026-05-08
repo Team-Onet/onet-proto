@@ -8,7 +8,8 @@
     <Description>Onet protobuf generated code</Description>
     <RepositoryUrl>https://github.com/$(RepositoryOwner)/onet-proto</RepositoryUrl>
     <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>10.0</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
