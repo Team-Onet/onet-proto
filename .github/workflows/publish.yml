@@ -65,6 +65,9 @@ jobs:
       - name: Inspect generated Java (version check)
         run: head -30 java/src/main/java/com/onet/common/v1/CommonProto.java
 
+      - name: Inspect generated Kotlin (version check)
+        run: head -30 java/src/main/kotlin/com/onet/common/v1/PingRequestKt.kt
+
       - uses: actions/setup-java@v4
         with:
           java-version: '21'

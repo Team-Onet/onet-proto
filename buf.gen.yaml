@@ -7,7 +7,7 @@ plugins:
     out: csharp/Generated
   - remote: buf.build/protocolbuffers/java:v25.3
     out: java/src/main/java
-  - remote: buf.build/grpc/java:v1.64.0
+  - remote: buf.build/grpc/java:v1.75.0
     out: java/src/main/java
   - remote: buf.build/protocolbuffers/kotlin:v25.3
     out: java/src/main/kotlin

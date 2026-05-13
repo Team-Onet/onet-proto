@@ -14,11 +14,11 @@
     <java.version>21</java.version>
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
-    <kotlin.version>1.9.23</kotlin.version>
-    <grpc.version>1.68.1</grpc.version>
+    <kotlin.version>2.2.0</kotlin.version>
+    <grpc.version>1.75.0</grpc.version>
     <grpc.kotlin.version>1.4.1</grpc.kotlin.version>
-    <protobuf.version>4.29.3</protobuf.version>
-    <coroutines.version>1.7.3</coroutines.version>
+    <protobuf.version>4.28.3</protobuf.version>
+    <coroutines.version>1.9.0</coroutines.version>
   </properties>
 
   <distributionManagement>
