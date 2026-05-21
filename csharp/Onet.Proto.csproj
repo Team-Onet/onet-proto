@@ -9,6 +9,9 @@
     <RepositoryUrl>https://github.com/Team-Onet/onet-proto</RepositoryUrl>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
