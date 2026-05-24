@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package onet.common.v1;
+
+option csharp_namespace = "Onet.Common.V1";
+option java_multiple_files = true;
+option java_outer_classname = "ErrorCodeProto";
+option java_package = "com.onet.common.v1";
+
+enum ErrorCode {
+  ERROR_CODE_UNSPECIFIED = 0;
+
+  // 공통
+  ERROR_CODE_INTERNAL = 1;
+  ERROR_CODE_UNAUTHENTICATED = 2;
+
+  // 매치메이커
+  ERROR_CODE_INVALID_LOBBY_TOKEN = 10000;
+  ERROR_CODE_MATCH_TIMEOUT = 10001;
+
+  // 배틀
+  ERROR_CODE_INVALID_BATTLE_TOKEN = 20000;
+  ERROR_CODE_PLAYER_NOT_FOUND = 20001;
+
+  // 로비
+  ERROR_CODE_INVALID_CREDENTIALS = 30000;
+  ERROR_CODE_ROOM_FULL = 30001;
+}
