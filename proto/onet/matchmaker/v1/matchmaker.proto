@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package onet.matchmaker.v1;
+
+option csharp_namespace = "Onet.Matchmaker.V1";
+option java_multiple_files = true;
+option java_outer_classname = "MatchmakerProto";
+option java_package = "com.onet.matchmaker.v1";
+
+service MatchMakerService {
+  // 매칭 시작. 매칭 완료까지 이벤트를 스트림으로 수신
+  rpc StartMatch(MatchRequest) returns (stream MatchEvent);
+}
+
+message MatchRequest {
+  string lobby_token = 1;
+}
+
+message MatchEvent {
+  oneof event {
+    MatchingStarted matching_started = 1;
+    MatchFound match_found = 2;
+  }
+}
+
+// 매칭 대기 시작
+message MatchingStarted {}
+
+// 매칭 완료 - 배틀서버 접속 정보 전달
+message MatchFound {
+  string battle_server_url = 1;
+  string battle_token = 2;
+}
