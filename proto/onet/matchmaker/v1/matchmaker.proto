@@ -16,7 +16,7 @@ service MatchMakerService {
 
 message MatchRequest {
   string lobby_token = 1;
-  MatchMode mode = 2;
+  onet.common.v1.MatchMode mode = 2;
 }
 
 message MatchEvent {
@@ -33,5 +33,5 @@ message MatchingStarted {}
 message MatchFound {
   string battle_server_url = 1;
   string battle_token = 2;
-  MatchMode mode = 3;
+  onet.common.v1.MatchMode mode = 3;
 }
