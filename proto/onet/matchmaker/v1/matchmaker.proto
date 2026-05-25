@@ -7,6 +7,8 @@ option java_multiple_files = true;
 option java_outer_classname = "MatchmakerProto";
 option java_package = "com.onet.matchmaker.v1";
 
+import "onet/common/v1/match_mode.proto";
+
 service MatchMakerService {
   // 매칭 시작. 매칭 완료까지 이벤트를 스트림으로 수신
   rpc StartMatch(MatchRequest) returns (stream MatchEvent);
@@ -14,6 +16,7 @@ service MatchMakerService {
 
 message MatchRequest {
   string lobby_token = 1;
+  MatchMode mode = 2;
 }
 
 message MatchEvent {
@@ -30,4 +33,5 @@ message MatchingStarted {}
 message MatchFound {
   string battle_server_url = 1;
   string battle_token = 2;
+  MatchMode mode = 3;
 }
