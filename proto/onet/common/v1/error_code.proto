@@ -22,6 +22,10 @@ enum ErrorCode {
   // 배틀
   ERROR_CODE_INVALID_BATTLE_TOKEN = 20000;
   ERROR_CODE_PLAYER_NOT_FOUND = 20001;
+  ERROR_CODE_ROOM_NOT_FOUND = 20002;       // 룸이 존재하지 않거나 이미 종료됨
+  ERROR_CODE_ROOM_ALREADY_STARTED = 20003; // 이미 시작된 룸에 입장 시도
+  ERROR_CODE_NOT_YOUR_TURN = 20004;        // 자기 턴이 아닐 때 행동 시도
+  ERROR_CODE_INVALID_BLOCK_POS = 20005;    // 유효하지 않은 블록 좌표
 
   // 로비
   ERROR_CODE_INVALID_CREDENTIALS = 30000;

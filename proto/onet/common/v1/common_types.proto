@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package onet.common.v1;
+
+option csharp_namespace = "Onet.Common.V1";
+option java_multiple_files = true;
+option java_outer_classname = "CommonTypesProto";
+option java_package = "com.onet.common.v1";
+
+enum MatchMode {
+  MATCH_MODE_UNSPECIFIED = 0;
+  MATCH_MODE_FRIENDLY = 1;   // 친선전 (비랭크)
+  MATCH_MODE_SOLO = 10;      // 1v1 랭크
+  MATCH_MODE_TEAM = 20;      // 2v2 랭크
+  MATCH_MODE_SOLO_BOT = 30;  // 1v1 봇전
+  MATCH_MODE_TEAM_BOT = 40;  // 2v2 봇전
+}
+
+enum ItemType {
+  ITEM_TYPE_UNSPECIFIED = 0;
+  ITEM_TYPE_SHUFFLE = 1;  // 보드 셔플
+  ITEM_TYPE_FIND = 2;     // 매칭 가능한 블록 쌍 힌트 제공
+  ITEM_TYPE_SPREAD = 3;   // 점유 확장 (TODO: 구현 예정)
+}

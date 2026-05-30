@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package onet.battle.v1;
+
+option csharp_namespace = "Onet.Battle.V1";
+option java_multiple_files = true;
+option java_outer_classname = "BattleTypesProto";
+option java_package = "com.onet.battle.v1";
+
+enum GameEndReason {
+  GAME_END_REASON_UNSPECIFIED = 0;
+  GAME_END_REASON_ALL_BLOCKS_CLEARED = 1;  // 모든 블록 제거로 정상 종료
+  GAME_END_REASON_GIVE_UP = 2;             // 플레이어 포기
+  GAME_END_REASON_PLAYER_LEFT = 3;         // 플레이어 연결 끊김
+}
+
+enum PlayerLeftReason {
+  PLAYER_LEFT_REASON_UNSPECIFIED = 0;
+  PLAYER_LEFT_REASON_GIVE_UP = 1;
+  PLAYER_LEFT_REASON_DISCONNECTED = 2;
+}
