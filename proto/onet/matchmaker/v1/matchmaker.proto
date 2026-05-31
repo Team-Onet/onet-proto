@@ -34,4 +34,6 @@ message MatchFound {
   string battle_server_url = 1;
   string battle_token = 2;
   onet.common.v1.MatchMode mode = 3;
+  // 서비스 내부 프록시(web-client)용 주소. 일반 클라이언트는 battle_server_url 사용
+  string battle_server_internal_url = 4;
 }
