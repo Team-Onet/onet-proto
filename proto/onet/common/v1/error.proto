@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package onet.common.v1;
+
+import "onet/common/v1/error_code.proto";
+
+option csharp_namespace = "Onet.Common.V1";
+option java_multiple_files = true;
+option java_outer_classname = "ErrorProto";
+option java_package = "com.onet.common.v1";
+
+message ErrorDetail {
+  ErrorCode code = 1;
+  string message = 2;
+}

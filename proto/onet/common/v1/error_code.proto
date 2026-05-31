@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package onet.common.v1;
+
+option csharp_namespace = "Onet.Common.V1";
+option java_multiple_files = true;
+option java_outer_classname = "ErrorCodeProto";
+option java_package = "com.onet.common.v1";
+
+enum ErrorCode {
+  ERROR_CODE_UNSPECIFIED = 0;
+
+  // 공통
+  ERROR_CODE_INTERNAL = 1;
+  ERROR_CODE_UNAUTHENTICATED = 2;
+  ERROR_CODE_INVALID_PARAM_VALUE = 3;
+
+  // 매치메이커
+  ERROR_CODE_INVALID_LOBBY_TOKEN = 10000;
+  ERROR_CODE_MATCH_NOT_FOUND = 10001;
+
+  // 배틀
+  ERROR_CODE_INVALID_BATTLE_TOKEN = 20000;
+  ERROR_CODE_PLAYER_NOT_FOUND = 20001;
+  ERROR_CODE_ROOM_NOT_FOUND = 20002;       // 룸이 존재하지 않거나 이미 종료됨
+  ERROR_CODE_ROOM_ALREADY_STARTED = 20003; // 이미 시작된 룸에 입장 시도
+  ERROR_CODE_NOT_YOUR_TURN = 20004;        // 자기 턴이 아닐 때 행동 시도
+  ERROR_CODE_INVALID_BLOCK_POS = 20005;    // 유효하지 않은 블록 좌표
+
+  // 로비
+  ERROR_CODE_INVALID_CREDENTIALS = 30000;
+  ERROR_CODE_ROOM_FULL = 30001;
+}
