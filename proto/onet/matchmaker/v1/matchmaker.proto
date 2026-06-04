@@ -17,6 +17,7 @@ service MatchMakerService {
 message MatchRequest {
   string lobby_token = 1;
   onet.common.v1.MatchMode mode = 2;
+  int32 map_id = 3;  // 0 = 랜덤, 1006~1012 = 지정 맵
 }
 
 message MatchEvent {
