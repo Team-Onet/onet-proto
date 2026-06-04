@@ -85,9 +85,8 @@ message ServerMessage {
 message RoomJoined {
   string room_id = 1;
   repeated PlayerInfo players = 2;
-  MapInfo map_info = 3;
-  BoardState board_state = 4;
-  onet.common.v1.MatchMode mode = 5;
+  BoardState board_state = 3;
+  onet.common.v1.MatchMode mode = 4;
 }
 
 // 모든 플레이어 입장 완료 → 게임 시작.
@@ -198,23 +197,17 @@ message PlayerInfo {
   bool is_bot = 5;     // 봇 플레이어 여부
 }
 
-// 맵 메타 정보.
-// 클라이언트는 seed 로 동일한 RandomEngine 을 초기화하여
-// 셔플 결과를 서버와 동기화할 수 있다.
-message MapInfo {
-  int32 width = 1;
-  int32 height = 2;
-  int64 seed = 3;
-  string map_id = 4;  // TODO: DB 연동 시 맵 식별자로 활용
-}
-
 // 보드 전체 상태 스냅샷.
 // RoomJoined 및 BoardSyncResponse 에서 사용.
+// width/height/seed/map_id 는 RoomJoined 에서만 의미있고 BoardSyncResponse 에서는 무시해도 됨.
 message BoardState {
   repeated BlockData blocks = 1;         // 현재 남아있는 블록 목록
   repeated SlotData occupied_slots = 2;  // 점유된 슬롯만 포함 (미점유 생략)
   int32 total_block_count = 3;           // 게임 시작 시 전체 블록 수
   int32 remaining_block_count = 4;       // 현재 남은 블록 수
+  int32 width = 5;   // 보드 가로 크기
+  int32 height = 6;  // 보드 세로 크기
+  int64 seed = 7;    // 셔플 동기화용 랜덤 시드
 }
 
 message BlockData {
