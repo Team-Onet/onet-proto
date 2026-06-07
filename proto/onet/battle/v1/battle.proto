@@ -87,6 +87,7 @@ message RoomJoined {
   repeated PlayerInfo players = 2;
   BoardState board_state = 3;
   onet.common.v1.MatchMode mode = 4;
+  string my_player_id = 5;  // 수신자 본인의 playerId
 }
 
 // 모든 플레이어 입장 완료 → 게임 시작.
