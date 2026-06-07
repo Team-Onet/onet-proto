@@ -12,6 +12,8 @@ enum GameEndReason {
   GAME_END_REASON_ALL_BLOCKS_CLEARED = 1;  // 모든 블록 제거로 정상 종료
   GAME_END_REASON_GIVE_UP = 2;             // 플레이어 포기
   GAME_END_REASON_PLAYER_LEFT = 3;         // 플레이어 연결 끊김
+  GAME_END_REASON_TURN_LIMIT_EXCEEDED = 4; // 연속 턴 제한 초과로 자동 종료 (매칭 없는 턴이 제한 횟수 이상 지속)
+  GAME_END_REASON_ABORTED = 5;             // 시스템 오류로 강제 종료 (셔플 불가 등)
 }
 
 enum PlayerLeftReason {
