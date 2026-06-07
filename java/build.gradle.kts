@@ -1,10 +1,10 @@
-// 로컬 includeBuild 전용 — CI 배포는 pom.xml(Maven) 사용
 plugins {
     kotlin("jvm") version "2.2.0"
+    `maven-publish`
 }
 
 group = "com.onet"
-version = "unspecified"
+version = project.findProperty("version")?.toString() ?: "unspecified"
 
 java {
     toolchain { languageVersion = JavaLanguageVersion.of(21) }
@@ -26,4 +26,24 @@ dependencies {
     api("io.grpc:grpc-kotlin-stub:1.4.1")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     compileOnly("javax.annotation:javax.annotation-api:1.3.2")
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("gpr") {
+            groupId = "com.onet"
+            artifactId = "onet-proto"
+            from(components["java"])
+        }
+    }
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/${System.getenv("GITHUB_REPOSITORY_OWNER") ?: "Team-Onet"}/onet-proto")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR") ?: ""
+                password = System.getenv("GITHUB_TOKEN") ?: ""
+            }
+        }
+    }
 }
