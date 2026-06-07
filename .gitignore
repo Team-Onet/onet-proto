@@ -4,3 +4,9 @@
 # buf 코드 생성 결과물 (CI에서 생성됨)
 csharp/Generated/
 java/src/
+
+# 빌드 결과물
+java/target/
+java/.flattened-pom.xml
+java/build/
+java/.gradle/
