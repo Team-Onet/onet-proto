@@ -16,6 +16,10 @@ service LobbyPublicService {
   // 발급된 lobby_token 을 매치메이커 요청 시 사용.
   rpc GuestLogin(GuestLoginRequest) returns (GuestLoginResponse);
 
+  // 액세스 토큰 갱신. refresh_token 으로 새 lobby_token 발급.
+  // 세션 TTL 도 함께 연장됨.
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+
   // 스펙 데이터 조회. 요청한 spec_names 에 해당하는 데이터를 JSON string 으로 반환.
   rpc GetSpec(GetSpecRequest) returns (GetSpecResponse);
 }
@@ -29,11 +33,24 @@ message GuestLoginRequest {
 }
 
 message GuestLoginResponse {
-  string player_id   = 1;  // 서버 발급 플레이어 ID
-  string nickname    = 2;  // 현재 닉네임 (미설정 시 빈 문자열)
-  int32  level       = 3;  // 플레이어 레벨
-  string lobby_token = 4;  // JWT — 매치메이커 및 후속 API 인증에 사용
-  bool   is_new      = 5;  // 최초 생성 계정 여부
+  string player_id     = 1;  // 서버 발급 플레이어 ID
+  string nickname      = 2;  // 현재 닉네임 (미설정 시 빈 문자열)
+  int32  level         = 3;  // 플레이어 레벨
+  string lobby_token   = 4;  // access token (JWT, 단기) — API 인증에 사용
+  bool   is_new        = 5;  // 최초 생성 계정 여부
+  string refresh_token = 6;  // refresh token (단기 만료 시 재발급용)
+}
+
+// ──────────────────────────────────────────────
+// RefreshToken
+// ──────────────────────────────────────────────
+
+message RefreshTokenRequest {
+  string refresh_token = 1;  // 로그인 시 발급받은 refresh token
+}
+
+message RefreshTokenResponse {
+  string lobby_token = 1;  // 새로 발급된 access token (JWT)
 }
 
 // ──────────────────────────────────────────────
