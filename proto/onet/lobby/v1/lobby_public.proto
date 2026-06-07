@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package onet.lobby.v1;
+
+option csharp_namespace = "Onet.Lobby.V1";
+option java_multiple_files = true;
+option java_outer_classname = "LobbyPublicProto";
+option java_package = "com.onet.lobby.v1";
+
+// ──────────────────────────────────────────────
+// Public Service (인증 불필요)
+// ──────────────────────────────────────────────
+
+service LobbyPublicService {
+  // 게스트 로그인. deviceId 기반으로 계정 생성 또는 조회.
+  // 발급된 lobby_token 을 매치메이커 요청 시 사용.
+  rpc GuestLogin(GuestLoginRequest) returns (GuestLoginResponse);
+
+  // 스펙 데이터 조회. 요청한 spec_names 에 해당하는 데이터를 JSON string 으로 반환.
+  rpc GetSpec(GetSpecRequest) returns (GetSpecResponse);
+}
+
+// ──────────────────────────────────────────────
+// GuestLogin
+// ──────────────────────────────────────────────
+
+message GuestLoginRequest {
+  string device_id = 1;  // 디바이스 고유 식별자
+}
+
+message GuestLoginResponse {
+  string player_id   = 1;  // 서버 발급 플레이어 ID
+  string nickname    = 2;  // 현재 닉네임 (미설정 시 빈 문자열)
+  int32  level       = 3;  // 플레이어 레벨
+  string lobby_token = 4;  // JWT — 매치메이커 및 후속 API 인증에 사용
+  bool   is_new      = 5;  // 최초 생성 계정 여부
+}
+
+// ──────────────────────────────────────────────
+// GetSpec
+// ──────────────────────────────────────────────
+
+message GetSpecRequest {
+  repeated string spec_names = 1;  // 요청할 스펙 이름 목록 (예: ["art", "option"])
+}
+
+message GetSpecResponse {
+  // spec name → JSON string (배열 또는 객체)
+  map<string, string> specs = 1;
+}

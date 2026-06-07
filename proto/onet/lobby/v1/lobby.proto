@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package onet.lobby.v1;
+
+option csharp_namespace = "Onet.Lobby.V1";
+option java_multiple_files = true;
+option java_outer_classname = "LobbyProto";
+option java_package = "com.onet.lobby.v1";
+
+// ──────────────────────────────────────────────
+// Lobby Service (lobby_token 인증 필요)
+// ──────────────────────────────────────────────
+
+service LobbyService {
+  // 닉네임 설정.
+  rpc SetNickname(SetNicknameRequest) returns (SetNicknameResponse);
+}
+
+// ──────────────────────────────────────────────
+// SetNickname
+// ──────────────────────────────────────────────
+
+message SetNicknameRequest {
+  string nickname = 1;
+}
+
+message SetNicknameResponse {
+  string nickname = 1;
+}
