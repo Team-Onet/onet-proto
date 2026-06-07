@@ -47,6 +47,15 @@ jobs:
             --api-key ${{ secrets.GITHUB_TOKEN }} \
             --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
 
+      - name: Delete old NuGet package versions
+        uses: actions/delete-package-versions@v5
+        continue-on-error: true
+        with:
+          package-name: 'Onet.Proto'
+          package-type: nuget
+          min-versions-to-keep: 9
+          token: ${{ secrets.GITHUB_TOKEN }}
+
   publish-java:
     runs-on: ubuntu-latest
     permissions:
@@ -87,3 +96,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+
+      - name: Delete old Maven package versions
+        uses: actions/delete-package-versions@v5
+        continue-on-error: true
+        with:
+          package-name: 'com.onet.onet-proto'
+          package-type: maven
+          min-versions-to-keep: 9
+          token: ${{ secrets.GITHUB_TOKEN }}
