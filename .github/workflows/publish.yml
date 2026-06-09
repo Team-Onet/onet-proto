@@ -74,12 +74,6 @@ jobs:
       - name: Generate code
         run: buf generate
 
-      - name: Inspect generated Java (version check)
-        run: head -30 java/src/main/java/com/onet/common/v1/CommonProto.java
-
-      - name: Inspect generated Kotlin (version check)
-        run: head -30 java/src/main/kotlin/com/onet/common/v1/PingRequestKt.kt
-
       - uses: actions/setup-java@v4
         with:
           java-version: '21'
@@ -89,6 +83,14 @@ jobs:
         with:
           gradle-version: '8.14'
 
+      - name: Deploy
+        run: gradle publish -Pversion=${GITHUB_REF_NAME#v}
+        working-directory: java
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+
       - name: Delete old Maven package versions
         uses: actions/delete-package-versions@v5
         continue-on-error: true
@@ -97,11 +99,3 @@ jobs:
           package-type: maven
           min-versions-to-keep: 3
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Deploy
-        run: gradle publish -Pversion=${GITHUB_REF_NAME#v}
-        working-directory: java
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
