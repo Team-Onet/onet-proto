@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package onet.battle.v1;
+
+option csharp_namespace = "Onet.Battle.V1";
+option java_multiple_files = true;
+option java_outer_classname = "BattleBaseProto";
+option java_package = "com.onet.battle.v1";
+
+import "onet/battle/v1/battle.proto";
+import "onet/battle/v1/battle_types.proto";
+
+// ============================================================
+// 배틀 서비스
+// 클라이언트가 Connect() 로 양방향 스트림을 연결하고,
+// 첫 번째 메시지로 반드시 JoinRoomRequest 를 전송해야 한다.
+// ============================================================
+service BattleService {
+  rpc Connect(stream ClientMessage) returns (stream ServerMessage);
+}
+
+// ============================================================
+// Envelope (transport-level)
+// 모든 stream 메시지는 ClientMessage / ServerMessage 로 감싸짐.
+// 도메인 payload (RoomJoined, BlockMatched 등) 는 battle.proto.
+// ============================================================
+
+// 모든 ServerMessage 공통 메타.
+// server_time_ms: 메시지 발행 시점. 클라는 (local_now - server_time_ms) 를 drift 로 캐싱.
+// effects: 클라가 순서대로 재생할 시각/사운드 효과 시퀀스.
+//          서버도 합계 시간만큼 대기 후 다음 액션 발행 → 서버/클라 동기화.
+message ResponseHeader {
+  int64 server_time_ms = 1;
+  repeated Effect effects = 2;
+}
+
+// 시각/사운드 효과 1개. 단발 알림성 효과는 메시지로 따로 빼지 않고 effects 에 entry로.
+// 게임 state 변경 / 풍부한 페이로드가 필요한 경우는 여전히 별도 메시지.
+message Effect {
+  EffectType type = 1;
+  int64 delay_ms = 2;
+}
+
+// 클라이언트 → 서버
+message ClientMessage {
+  oneof payload {
+    JoinRoomRequest join_room = 1;
+    SelectBlockRequest select_block = 2;
+    UseItemRequest use_item = 3;
+    BoardSyncRequest board_sync = 4;
+    GiveUpRequest give_up = 5;
+  }
+}
+
+// 서버 → 클라이언트
+message ServerMessage {
+  ResponseHeader header = 1;
+  oneof payload {
+    RoomJoined room_joined = 2;
+    GameStarted game_started = 3;
+    NextTurn next_turn = 4;
+    BlockSelected block_selected = 5;
+    BlockMatched block_matched = 6;
+    BlockMatchFailed block_match_failed = 7;
+    TurnTimeout turn_timeout = 8;
+    BoardShuffled board_shuffled = 9;
+    BoardSyncResponse board_sync = 10;
+    ItemUsed item_used = 11;
+    GameResult game_result = 12;
+    PlayerLeft player_left = 13;
+    StreamError stream_error = 14;
+  }
+}

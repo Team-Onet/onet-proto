@@ -21,3 +21,11 @@ enum PlayerLeftReason {
   PLAYER_LEFT_REASON_GIVE_UP = 1;
   PLAYER_LEFT_REASON_DISCONNECTED = 2;
 }
+
+enum EffectType {
+  EFFECT_TYPE_UNSPECIFIED = 0;
+  EFFECT_TYPE_BLOCK_MATCHED = 1;     // 매칭 성공 점령 연출
+  EFFECT_TYPE_FEVER = 2;             // 피버 진입 (isHighlighted 발동)
+  EFFECT_TYPE_BOARD_SHUFFLED = 3;    // 자동 셔플 연출
+  // 향후: COMBO, MILESTONE, STREAK, ITEM_* 등
+}

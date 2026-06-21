@@ -12,26 +12,8 @@ import "onet/common/v1/common_types.proto";
 import "onet/common/v1/error_code.proto";
 
 // ============================================================
-// 배틀 서비스
-// 클라이언트가 Connect() 로 양방향 스트림을 연결하고,
-// 첫 번째 메시지로 반드시 JoinRoomRequest 를 전송해야 한다.
+// 도메인 페이로드 (envelope 와 service 는 battle_base.proto)
 // ============================================================
-service BattleService {
-  rpc Connect(stream ClientMessage) returns (stream ServerMessage);
-}
-
-// ============================================================
-// 클라이언트 → 서버
-// ============================================================
-message ClientMessage {
-  oneof payload {
-    JoinRoomRequest join_room = 1;
-    SelectBlockRequest select_block = 2;
-    UseItemRequest use_item = 3;
-    BoardSyncRequest board_sync = 4;
-    GiveUpRequest give_up = 5;
-  }
-}
 
 // 룸 입장. battle_token 은 MatchMaker 가 발급한 JWT.
 // 페이로드: roomId, playerId, nickname, level
@@ -59,35 +41,6 @@ message BoardSyncRequest {}
 // 포기 선언. 즉시 패배 처리 후 GameResult 전송.
 message GiveUpRequest {}
 
-// ============================================================
-// 서버 → 클라이언트
-// ============================================================
-message ServerMessage {
-  ResponseHeader header = 1;
-  oneof payload {
-    RoomJoined room_joined = 2;
-    GameStarted game_started = 3;
-    NextTurn next_turn = 4;
-    BlockSelected block_selected = 5;
-    BlockMatched block_matched = 6;
-    BlockMatchFailed block_match_failed = 7;
-    TurnTimeout turn_timeout = 8;
-    BoardShuffled board_shuffled = 9;
-    BoardSyncResponse board_sync = 10;
-    ItemUsed item_used = 11;
-    GameResult game_result = 12;
-    PlayerLeft player_left = 13;
-    StreamError stream_error = 14;
-  }
-}
-
-// 모든 ServerMessage 공통 메타.
-// server_time_ms: 메시지 발행 시점. 클라는 (local_now - server_time_ms) 를 drift 로 캐싱.
-// effect_delay_ms: 클라 연출 시간. 서버도 이 시간만큼 대기 후 다음 액션 발행.
-message ResponseHeader {
-  int64 server_time_ms = 1;
-  int64 effect_delay_ms = 2;
-}
 
 // 룸 입장 완료. 초기 보드 상태 포함.
 // 모든 플레이어가 받으며, 이후 GameStarted 를 기다린다.
