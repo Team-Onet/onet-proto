@@ -63,21 +63,30 @@ message GiveUpRequest {}
 // 서버 → 클라이언트
 // ============================================================
 message ServerMessage {
+  ResponseHeader header = 1;
   oneof payload {
-    RoomJoined room_joined = 1;
-    GameStarted game_started = 2;
-    NextTurn next_turn = 3;
-    BlockSelected block_selected = 4;
-    BlockMatched block_matched = 5;
-    BlockMatchFailed block_match_failed = 6;
-    TurnTimeout turn_timeout = 7;
-    BoardShuffled board_shuffled = 8;
-    BoardSyncResponse board_sync = 9;
-    ItemUsed item_used = 10;
-    GameResult game_result = 11;
-    PlayerLeft player_left = 12;
-    StreamError stream_error = 13;
+    RoomJoined room_joined = 2;
+    GameStarted game_started = 3;
+    NextTurn next_turn = 4;
+    BlockSelected block_selected = 5;
+    BlockMatched block_matched = 6;
+    BlockMatchFailed block_match_failed = 7;
+    TurnTimeout turn_timeout = 8;
+    BoardShuffled board_shuffled = 9;
+    BoardSyncResponse board_sync = 10;
+    ItemUsed item_used = 11;
+    GameResult game_result = 12;
+    PlayerLeft player_left = 13;
+    StreamError stream_error = 14;
   }
+}
+
+// 모든 ServerMessage 공통 메타.
+// server_time_ms: 메시지 발행 시점. 클라는 (local_now - server_time_ms) 를 drift 로 캐싱.
+// effect_delay_ms: 클라 연출 시간. 서버도 이 시간만큼 대기 후 다음 액션 발행.
+message ResponseHeader {
+  int64 server_time_ms = 1;
+  int64 effect_delay_ms = 2;
 }
 
 // 룸 입장 완료. 초기 보드 상태 포함.
@@ -97,11 +106,15 @@ message GameStarted {
 }
 
 // 다음 턴 시작. 모든 플레이어에게 브로드캐스트.
+// turn_end_at_unix_ms: 이번 턴 종료 절대시각 (서버 unix ms). 클라는
+// server_time_ms 와 비교해 drift 보정 후 (deadline - now) 로 잔여시간 계산.
+// turn_time_ms 는 원본 제한시간 (동적 조작 전 기준), deadline 은 실시간 값.
 message NextTurn {
   string player_id = 1;
-  int32 turn_time_ms = 2;   // 이번 턴 제한시간 (ms), 지수 감소 적용됨
-  int32 turn_number = 3;    // 전체 턴 카운터 (1부터 시작)
-  bool is_prev_timeout = 4; // 이전 턴이 타임아웃으로 종료된 경우 true
+  int32 turn_time_ms = 2;       // 이번 턴 제한시간 (ms), 지수 감소 적용됨
+  int32 turn_number = 3;        // 전체 턴 카운터 (1부터 시작)
+  bool is_prev_timeout = 4;     // 이전 턴이 타임아웃으로 종료된 경우 true
+  int64 turn_end_at_unix_ms = 5; // 이번 턴 종료 절대시각 (서버 unix ms)
 }
 
 // 블록 선택/해제 브로드캐스트.
@@ -143,10 +156,12 @@ message BoardShuffled {
 }
 
 // 보드 전체 상태 동기화 응답.
+// turn_end_at_unix_ms: 현재 턴 종료 절대시각 (서버 unix ms).
+// 클라는 매 프레임 (deadline - now + drift) 로 잔여시간 계산.
 message BoardSyncResponse {
   BoardState board_state = 1;
-  string current_player_id = 2;  // 현재 턴 플레이어
-  int32 remaining_turn_ms = 3;   // 현재 턴 남은 시간 (ms)
+  string current_player_id = 2;     // 현재 턴 플레이어
+  int64 turn_end_at_unix_ms = 3;    // 현재 턴 종료 절대시각 (서버 unix ms)
 }
 
 // 아이템 사용 결과 브로드캐스트.
