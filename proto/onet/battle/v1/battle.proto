@@ -182,6 +182,9 @@ message BoardState {
 message BlockData {
   BlockPos pos = 1;
   int32 art_num = 2;  // 블록 종류 식별자. 같은 art_num 끼리 매칭 가능.
+  // SIEGE 모드 한정: 블록 소유 팀. "A"=내 팀, "B"=상대 팀, "NEUTRAL"=황금 더미.
+  // 시즈 외 모드에서는 빈 문자열 (무시).
+  string team_id = 3;
 }
 
 // 점유된 슬롯 정보.
@@ -222,3 +225,113 @@ message PlayerResult {
   int32 timeout_count = 5; // 타임아웃 횟수
 }
 
+// ============================================================
+// Siege Mode (성 부시기, 프로토타입)
+// MATCH_MODE_SIEGE_SOLO 에서만 사용. 그 외 모드에서는 발행되지 않음.
+//
+// 추상 트랙: 좌측 성 position=0, 우측 성 position=track_length.
+// 대포는 시간 기반으로 turn-independent 이동.
+// 모든 거리/체력/공격력은 float (프로토타입 단순화).
+// ============================================================
+
+// 시즈 초기 상태. RoomJoined 직후 SiegeStateInit 1회 발행.
+message SiegeStateInit {
+  repeated SiegeCastle castles = 1;       // team_id 별 1개
+  repeated int32 my_deck_art_nums = 2;    // 수신자 본인 덱 (6개, 중복 없음)
+  repeated int32 opp_deck_art_nums = 3;   // 상대 덱 (6개)
+  float track_length = 4;                 // 추상 길이 (기본 100)
+  float cannon_speed_per_sec = 5;         // 대포 기본 속도
+}
+
+message SiegeCastle {
+  string team_id = 1;
+  float position = 2;       // 트랙 좌표
+  float hp = 3;
+  float max_hp = 4;
+  float fire_range = 5;     // 성 사거리
+  float fire_atk = 6;       // 성 공격력
+  bool faces_right = 7;     // 우측 진군 여부 (좌 성=true, 우 성=false)
+}
+
+// 신규 대포 spawn. 자기 턴 종료 시 또는 첫 턴 페어 종료 직후.
+message CannonSpawned {
+  string cannon_id = 1;
+  string owner_team_id = 2;
+  float position = 3;
+  float speed_per_sec = 4;   // 부호 포함 (좌→우=양수, 우→좌=음수)
+  float hp = 5;
+  float max_hp = 6;
+  float fire_range = 7;
+}
+
+// 대포 좌표 sync. 1초 주기 + 이벤트 발생 직후.
+// 클라는 position + (now - at_unix_ms) * speed_per_sec 로 보간.
+// speed_per_sec 는 ping-pong reflect 로 부호가 바뀔 수 있어 매 sync 마다 같이 보냄.
+message CannonMoved {
+  string cannon_id = 1;
+  float position = 2;
+  int64 at_unix_ms = 3;
+  float speed_per_sec = 4;
+}
+
+// 매칭으로 사거리 내 모든 자기측 cannon/castle 동시 장전.
+message AmmoLoaded {
+  // 장전 대상 1건당 1개 항목.
+  message Entry {
+    // "CANNON:{cannon_id}" 또는 "CASTLE:{team_id}".
+    string holder_id = 1;
+    int32 art_num = 2;
+    float atk = 3;
+    int32 added = 4;          // 이번에 추가된 발 수
+    int32 total = 5;          // 누적 잔탄 (해당 art_num)
+  }
+  string source_player_id = 1;  // 매칭한 플레이어 (장전 트리거)
+  repeated Entry entries = 2;
+}
+
+// 대포 발사 (즉시, 사거리 내 가장 가까운 적). 사거리 밖이면 발행되지 않음.
+message CannonFired {
+  string src_cannon_id = 1;
+  string dst_id = 2;            // "CANNON:{id}" 또는 "CASTLE:{team_id}"
+  int32 art_num = 3;
+  float damage = 4;
+  int64 fired_at_unix_ms = 5;
+  int64 impact_at_unix_ms = 6;  // 포물선 도착 예상 시각 (효과 동기화)
+}
+
+// 성 발사 (졸라맨 throw). atk 2.5, 사거리 = 대포의 2배.
+message CastleFired {
+  string src_team_id = 1;
+  string dst_id = 2;
+  int32 art_num = 3;
+  float damage = 4;
+  int64 fired_at_unix_ms = 5;
+  int64 impact_at_unix_ms = 6;
+}
+
+// 오브젝트 hp 변경 (대포 피격, 성 피격 공통).
+// hp == 0 이면 별도 ObjectDestroyed 후속 발행.
+message SiegeObjectHpChanged {
+  string object_id = 1;  // "CANNON:{id}" or "CASTLE:{team_id}"
+  float hp = 2;
+  float max_hp = 3;
+}
+
+// 대포 파괴 (hp 0). 클라는 이후 해당 cannon_id 무시.
+message SiegeObjectDestroyed {
+  string object_id = 1;
+}
+
+// 시즈 모드 종료.
+message SiegeResult {
+  string winner_team_id = 1;
+  SiegeEndReason end_reason = 2;
+  int64 ended_at_unix_ms = 3;
+}
+
+enum SiegeEndReason {
+  SIEGE_END_REASON_UNSPECIFIED = 0;
+  SIEGE_END_REASON_CASTLE_DESTROYED = 1;  // 적 성 hp 0
+  SIEGE_END_REASON_BOARD_EMPTY = 2;       // 블록 소진, 적 성 hp > 0 → 매칭 트리거 측 패
+  SIEGE_END_REASON_GIVE_UP = 3;
+}

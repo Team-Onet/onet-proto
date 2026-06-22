@@ -14,6 +14,7 @@ enum MatchMode {
   MATCH_MODE_TEAM = 20;      // 2v2 랭크
   MATCH_MODE_SOLO_BOT = 30;  // 1v1 봇전
   MATCH_MODE_TEAM_BOT = 40;  // 2v2 봇전
+  MATCH_MODE_SIEGE_SOLO = 50; // 싱글 공성전 (봇 상대, 프로토타입)
 }
 
 enum ItemType {

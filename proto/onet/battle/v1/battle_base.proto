@@ -69,5 +69,15 @@ message ServerMessage {
     GameResult game_result = 12;
     PlayerLeft player_left = 13;
     StreamError stream_error = 14;
+    // --- Siege Mode payloads (MATCH_MODE_SIEGE_SOLO 에서만) ---
+    SiegeStateInit siege_state_init = 15;
+    CannonSpawned cannon_spawned = 16;
+    CannonMoved cannon_moved = 17;
+    AmmoLoaded ammo_loaded = 18;
+    CannonFired cannon_fired = 19;
+    CastleFired castle_fired = 20;
+    SiegeObjectHpChanged siege_object_hp_changed = 21;
+    SiegeObjectDestroyed siege_object_destroyed = 22;
+    SiegeResult siege_result = 23;
   }
 }
