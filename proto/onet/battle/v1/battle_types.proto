@@ -27,5 +27,6 @@ enum EffectType {
   EFFECT_TYPE_BLOCK_MATCHED = 1;     // 매칭 성공 점령 연출
   EFFECT_TYPE_FEVER = 2;             // 피버 진입 (isHighlighted 발동)
   EFFECT_TYPE_BOARD_SHUFFLED = 3;    // 자동 셔플 연출
+  EFFECT_TYPE_COMBO_BREAK = 4;       // 콤보 윈도우 만료/턴 타임아웃 등으로 콤보 끊김
   // 향후: COMBO, MILESTONE, STREAK, ITEM_* 등
 }
