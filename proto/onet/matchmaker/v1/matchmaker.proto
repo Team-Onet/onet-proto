@@ -17,7 +17,11 @@ service MatchMakerService {
 message MatchRequest {
   string lobby_token = 1;
   onet.common.v1.MatchMode mode = 2;
-  int32 map_id = 3;  // 0 = 랜덤, 1006~1012 = 지정 맵
+  // 명시 맵 ID (디버그/지정용). 0 = 미지정 (map_type 사용).
+  int32 map_id = 3;
+  // 맵 사이즈 그룹. 6/7/8/9/10/11/12. 0 = 미지정 (전체 랜덤).
+  // map_id 가 지정되면 그것이 우선, 아니면 동일 map_type 풀에서 랜덤 픽.
+  int32 map_type = 4;
 }
 
 message MatchEvent {
