@@ -41,6 +41,11 @@ message BoardSyncRequest {}
 // 포기 선언. 즉시 패배 처리 후 GameResult 전송.
 message GiveUpRequest {}
 
+// 클라이언트 매칭/입장 연출 완료 신호.
+// RoomJoined 수신 후 각 클라가 준비되면 송신.
+// 서버는 모든 세션(봇 포함)이 ready 상태일 때 GameStarted 를 브로드캐스트한다.
+message StartGameReadyRequest {}
+
 
 // 룸 입장 완료. 초기 보드 상태 포함.
 // 모든 플레이어가 받으며, 이후 GameStarted 를 기다린다.
@@ -156,6 +161,13 @@ message PlayerLeft {
 message StreamError {
   onet.common.v1.ErrorCode code = 1;
   string message = 2;
+}
+
+// 게임 시작 전 취소. RoomJoined 이후 START_GAME 진입 전에만 발생.
+// 이 메시지 이후 서버가 스트림을 종료한다.
+message GameCanceled {
+  GameCancelReason reason = 1;
+  repeated string missing_player_ids = 2;   // READY_TIMEOUT 시 미송신자 목록
 }
 
 // ============================================================

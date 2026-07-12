@@ -49,6 +49,7 @@ message ClientMessage {
     UseItemRequest use_item = 3;
     BoardSyncRequest board_sync = 4;
     GiveUpRequest give_up = 5;
+    StartGameReadyRequest start_game_ready = 6;
   }
 }
 
@@ -69,5 +70,6 @@ message ServerMessage {
     GameResult game_result = 12;
     PlayerLeft player_left = 13;
     StreamError stream_error = 14;
+    GameCanceled game_canceled = 15;
   }
 }

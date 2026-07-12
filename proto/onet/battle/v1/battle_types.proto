@@ -22,6 +22,12 @@ enum PlayerLeftReason {
   PLAYER_LEFT_REASON_DISCONNECTED = 2;
 }
 
+enum GameCancelReason {
+  GAME_CANCEL_REASON_UNSPECIFIED = 0;
+  GAME_CANCEL_REASON_READY_TIMEOUT = 1;         // RoomJoined 후 제한 시간 내 StartGameReady 미수신
+  GAME_CANCEL_REASON_PLAYER_DISCONNECTED = 2;   // READY_WAIT 중 플레이어 접속 종료
+}
+
 enum EffectType {
   EFFECT_TYPE_UNSPECIFIED = 0;
   EFFECT_TYPE_BLOCK_MATCHED = 1;     // 매칭 성공 점령 연출
