@@ -165,9 +165,13 @@ message StreamError {
 
 // 게임 시작 전 취소. RoomJoined 이후 START_GAME 진입 전에만 발생.
 // 이 메시지 이후 서버가 스트림을 종료한다.
+//
+// missing_player_ids: 아직 StartGameReady 를 보내지 못한 실 플레이어 목록 (봇 제외).
+//   - READY_TIMEOUT   → 제한 시간 안에 ready 신호를 못 보낸 세션.
+//   - PLAYER_DISCONNECTED → 접속 종료로 ready 를 못 보낸 세션 (끊긴 자 포함).
 message GameCanceled {
   GameCancelReason reason = 1;
-  repeated string missing_player_ids = 2;   // READY_TIMEOUT 시 미송신자 목록
+  repeated string missing_player_ids = 2;
 }
 
 // ============================================================
