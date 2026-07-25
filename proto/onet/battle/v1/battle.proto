@@ -101,6 +101,7 @@ message BlockMatched {
   int32 match_score = 6;               // 획득 점수 (점유 슬롯 합산)
   int32 remaining_block_count = 7;     // 매칭 후 남은 블록 수
   int32 combo_count = 8;               // 이 매칭 직후 콤보 카운트 (0 = 봇 등 콤보 미적용)
+  bool is_auto_match = 9;              // true = 서버 자동 매칭 (턴 timeout 트리거). false = 사용자 매칭
 }
 
 // 매칭 실패 브로드캐스트 (경로 없음 or 타입 불일치).
