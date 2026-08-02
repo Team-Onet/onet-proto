@@ -71,5 +71,6 @@ message ServerMessage {
     PlayerLeft player_left = 13;
     StreamError stream_error = 14;
     GameCanceled game_canceled = 15;
+    BlockMatchedSpecialEffect block_matched_special_effect = 16;
   }
 }

@@ -37,5 +37,17 @@ enum EffectType {
   EFFECT_TYPE_FEVER = 2;             // 피버 진입 (isHighlighted 발동)
   EFFECT_TYPE_BOARD_SHUFFLED = 3;    // 자동 셔플 연출
   EFFECT_TYPE_COMBO_BREAK = 4;       // 콤보 윈도우 만료/턴 타임아웃 등으로 콤보 끊김
+  EFFECT_TYPE_SCORE_BONUS = 5;       // 보너스 특수타일 매칭 시 +N 팝업 연출
+  EFFECT_TYPE_TRAP_SPRUNG = 6;       // 함정 특수타일 매칭 → 반대편 팀 소유로 반전 연출
+  EFFECT_TYPE_FORTIFY = 7;           // 성벽 특수타일 매칭 → 획득 슬롯 fortified 형성 연출
   // 향후: COMBO, MILESTONE, STREAK, ITEM_* 등
+}
+
+// 셔플 트리거 유형. `BoardShuffled.reason` 에 실려 클라가 셔플 원인을 인지한다.
+// 셔플 발생 소스가 늘어나도 이 enum 만 확장 (BoardShuffled 자체는 stable).
+enum ShuffleReason {
+  SHUFFLE_REASON_UNSPECIFIED = 0;
+  SHUFFLE_REASON_NO_MOVES = 1;       // 매칭 가능 pair 없음 → 서버 자동 셔플
+  SHUFFLE_REASON_ITEM = 2;           // ITEM_TYPE_SHUFFLE 아이템 사용
+  SHUFFLE_REASON_SPECIAL_TILE = 3;   // 셔플 특수타일 매칭 발동
 }
