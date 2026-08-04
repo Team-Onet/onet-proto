@@ -27,11 +27,10 @@ service BattleService {
 
 // 모든 ServerMessage 공통 메타.
 // server_time_ms: 메시지 발행 시점. 클라는 (local_now - server_time_ms) 를 drift 로 캐싱.
-// effects: 클라가 순서대로 재생할 시각/사운드 효과 시퀀스.
-//          서버도 합계 시간만큼 대기 후 다음 액션 발행 → 서버/클라 동기화.
+// 연출 시퀀스는 각 이벤트 message 안 `repeated Effect effects` 필드로 이관됨.
+// 예: BlockMatched.effects, BoardShuffled.effects, NextTurn.effects, ItemUsed.effects.
 message ResponseHeader {
   int64 server_time_ms = 1;
-  repeated Effect effects = 2;
 }
 
 // 시각/사운드 효과 1개. 단발 알림성 효과는 메시지로 따로 빼지 않고 effects 에 entry로.
@@ -71,6 +70,7 @@ message ServerMessage {
     PlayerLeft player_left = 13;
     StreamError stream_error = 14;
     GameCanceled game_canceled = 15;
-    BlockMatchedSpecialEffect block_matched_special_effect = 16;
+    // 16 = 폐기: BlockMatchedSpecialEffect 스트림 → BlockMatched.ability 필드로 격하.
+    reserved 16;
   }
 }

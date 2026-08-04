@@ -64,9 +64,9 @@ message GameStarted {
   repeated SpecialBlockSummary special_block_summary = 2;       // 이번 게임에 배치된 특수 블록 카탈로그 (종류 + 개수). HIDDEN 포함 - 유저 긴장 UX.
 }
 
-// 이번 게임에 활성화된 특수 블록 종류/개수 요약. 실 위치는 BlockData.special_block_type (visibility 준수) 로 별도 전달.
+// 이번 게임에 활성화된 특수 블록 종류/개수 요약. 실 위치는 BlockData.block_type (visibility 준수) 로 별도 전달.
 message SpecialBlockSummary {
-  SpecialBlockType special_block_type = 1;
+  BlockType block_type = 1;
   int32 tile_count = 2;
 }
 
@@ -88,6 +88,7 @@ message NextTurn {
   int64 combo_deadline_unix_ms = 6; // 콤보 윈도우 만료 절대시각 (0 = 미적용)
   int32 combo_count = 7;        // 매칭 직전 콤보 카운트 (0 = 콤보 없음)
   int32 combo_bonus_ms = 8;     // turn_time_ms 중 콤보 보너스 분량 (ms). 0 = 보너스 없음/봇
+  repeated Effect effects = 9;  // 이 이벤트에서 재생할 연출 시퀀스 (COMBO_BREAK 등)
 }
 
 // 블록 선택/해제 브로드캐스트.
@@ -99,47 +100,47 @@ message BlockSelected {
 }
 
 // 매칭 성공 브로드캐스트. 이후 서버가 NextTurn 을 전송한다.
+// ability 필드 = 매칭 블록이 특수 블록일 때 발동된 능력. 일반 매칭은 unset (BlockType=NORMAL).
 message BlockMatched {
   string player_id = 1;
   BlockPos pos1 = 2;
   BlockPos pos2 = 3;
-  repeated BlockPos path = 4;          // 경로상 모든 좌표 (pos1, pos2 포함)
-  repeated OccupiedSlot occupied = 5;  // 이번 매칭으로 점유된 슬롯 목록
-  int32 match_score = 6;               // 획득 점수 (점유 슬롯 합산)
-  int32 remaining_block_count = 7;     // 매칭 후 남은 블록 수
-  int32 combo_count = 8;               // 이 매칭 직후 콤보 카운트 (0 = 봇 등 콤보 미적용)
-  bool is_auto_match = 9;              // true = 서버 자동 매칭 (턴 timeout 트리거). false = 사용자 매칭
+  repeated BlockPos path = 4;                       // 경로상 모든 좌표 (pos1, pos2 포함)
+  repeated OccupiedSlot occupied = 5;               // 이번 매칭으로 점유된 슬롯 목록
+  int32 match_score = 6;                            // 획득 점수 (점유 슬롯 합산)
+  int32 remaining_block_count = 7;                  // 매칭 후 남은 블록 수
+  int32 combo_count = 8;                            // 이 매칭 직후 콤보 카운트 (0 = 봇 등 콤보 미적용)
+  bool is_auto_match = 9;                           // true = 서버 자동 매칭 (턴 timeout 트리거). false = 사용자 매칭
+  BlockType block_type = 10;                        // 매칭된 블록 종류 (NORMAL / 특수)
+  BlockMatchedSpecialAbility ability = 11;          // 특수 블록 매칭 시 발동된 능력 (nullable, 일반 매칭은 unset)
+  repeated Effect effects = 12;                     // 이 이벤트에서 재생할 연출 시퀀스 (BLOCK_MATCHED, FEVER, SCORE_BONUS 등)
 }
 
-// `BlockMatched` 파생 특수효과 이벤트. BlockMatched 직후 순차 스트림 (gRPC stream 순서 보장으로 correlate).
-// 매칭 정보 (pos/score) 는 직전 BlockMatched 참조 - 이 메시지는 특수효과 delta 만 담는다.
-// player_id = 발동자 (defensive 검증용). 연출 delay 는 ResponseHeader.effects[] 자동 부착.
-//
-// 확장: 신규 매칭 발동 효과 = oneof case + XxxEffect message 추가. 매칭 외 발동 (예: 매턴 이동 타일) 은 별개 도메인 message.
-// 셔플 특수타일 예외: hub 우회 → BlockMatched 직후 BoardShuffled(reason=SPECIAL_TILE) 직접 스트림.
-message BlockMatchedSpecialEffect {
-  string player_id = 1;
-  oneof effect {
-    ScoreBonusEffect score_bonus = 2;
-    TrapEffect trap = 3;
-    FortifyEffect fortify = 4;
-    // 향후: BombEffect bomb = 5; ThiefEffect thief = 6;
+// 특수 블록 매칭 시 발동 능력. BlockMatched.ability 필드 타입 (별개 스트림 아님).
+// oneof 로 능력별 payload 표현. 연출 재생은 BlockMatched.effects[] 가 담당.
+// 셔플 특수 블록은 여기 담기지 않고 BlockMatched 직후 BoardShuffled(reason=SPECIAL_TILE) 로 직접 스트림.
+message BlockMatchedSpecialAbility {
+  oneof ability {
+    ScoreBonusAbility score_bonus = 1;
+    TrapAbility trap = 2;
+    FortifyAbility fortify = 3;
+    // 향후: BombAbility bomb = 4; ThiefAbility thief = 5;
   }
 }
 
-// 보너스 특수타일: +N 팝업 연출.
-message ScoreBonusEffect {
+// 보너스 특수 블록 매칭 결과. 연출 트리거는 BlockMatched.effects[EFFECT_TYPE_SCORE_BONUS].
+message ScoreBonusAbility {
   int32 bonus_score = 1;
   int32 total_score = 2;  // drift 검증
 }
 
-// 함정 특수타일: 매칭한 슬롯이 반대편 팀 소유로 넘어감. 결과는 BlockMatched.occupied 에 이미 반영.
+// 함정 특수 블록 매칭 결과. 매칭한 슬롯이 반대편 팀 소유로 넘어감. 결과는 BlockMatched.occupied 에 이미 반영.
 // TODO: 시야 마스킹 (상대에게 안 보임) 별도 이슈 (broadcaster per-recipient).
-message TrapEffect {
+message TrapAbility {
 }
 
-// 성벽 특수타일: BlockMatched.occupied 슬롯이 fortified 상태로 마킹 → 도둑 등 뺏기에 저항.
-message FortifyEffect {
+// 성벽 특수 블록 매칭 결과. BlockMatched.occupied 슬롯이 fortified 상태로 마킹 → 도둑 등 뺏기에 저항.
+message FortifyAbility {
 }
 
 // 매칭 실패 브로드캐스트 (경로 없음 or 타입 불일치).
@@ -161,6 +162,7 @@ message TurnTimeout {
 message BoardShuffled {
   repeated BlockMove moves = 1;
   ShuffleReason reason = 2;
+  repeated Effect effects = 3;  // 이 이벤트에서 재생할 연출 시퀀스 (BOARD_SHUFFLED)
 }
 
 // 보드 전체 상태 동기화 응답.
@@ -178,6 +180,7 @@ message ItemUsed {
   string player_id = 1;
   onet.common.v1.ItemType item_type = 2;
   repeated BlockPos hint_blocks = 3;  // ITEM_TYPE_FIND: [pos1, pos2] 힌트 쌍
+  repeated Effect effects = 4;        // 이 이벤트에서 재생할 연출 시퀀스
 }
 
 // 게임 최종 결과. 모든 블록 제거 또는 조기 종료 시 전송.
@@ -247,8 +250,8 @@ message BoardState {
 
 message BlockData {
   BlockPos pos = 1;
-  int32 art_num = 2;                       // 블록 종류 식별자. 같은 art_num 끼리 매칭 가능.
-  SpecialBlockType special_block_type = 3; // 특수 블록 종류. UNSPECIFIED = 일반 블록 or 히든 특수 블록 (서버가 마스킹).
+  int32 art_num = 2;         // 블록 종류 식별자. 같은 art_num 끼리 매칭 가능.
+  BlockType block_type = 3;  // 블록 종류 (NORMAL / 특수). UNSPECIFIED = 히든 특수 블록 (서버가 마스킹).
 }
 
 // 점유된 슬롯 정보.
@@ -261,7 +264,7 @@ message SlotData {
 }
 
 // 매칭 성공 시 점유된 슬롯 상세 정보.
-// 성벽 fortified 마킹 알림 = BlockMatchedSpecialEffect(fortify) 후속 이벤트로 별도 스트림 (여기 필드 X).
+// 성벽 fortified 마킹 알림 = BlockMatched.ability.fortify 필드로 담김 (여기 필드 X).
 // 재접속/스냅샷 복원용 fortified 상태 = SlotData.fortified 로 별도 전달.
 message OccupiedSlot {
   BlockPos pos = 1;
