@@ -31,6 +31,13 @@ enum GameCancelReason {
   GAME_CANCEL_REASON_PLAYER_DISCONNECTED = 2;   // READY_WAIT 중 플레이어 접속 종료
 }
 
+// 시각/사운드 효과 1개. 각 이벤트 message 안 `repeated Effect effects` 필드에 entry 로 실림.
+// 클라는 시퀀스 순서대로 재생. 서버는 delay_ms 합계만큼 대기 후 다음 액션 발행 (동기화).
+message Effect {
+  EffectType type = 1;
+  int64 delay_ms = 2;
+}
+
 // 클라 연출 재생 트리거. 매칭/셔플/턴 등 각 이벤트 message 안 repeated Effect 필드에 담겨 전달.
 // 블록 정체성 (BlockType) 과 무관.
 enum EffectType {

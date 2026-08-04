@@ -29,15 +29,9 @@ service BattleService {
 // server_time_ms: 메시지 발행 시점. 클라는 (local_now - server_time_ms) 를 drift 로 캐싱.
 // 연출 시퀀스는 각 이벤트 message 안 `repeated Effect effects` 필드로 이관됨.
 // 예: BlockMatched.effects, BoardShuffled.effects, NextTurn.effects, ItemUsed.effects.
+// Effect message 정의는 battle_types.proto 참조.
 message ResponseHeader {
   int64 server_time_ms = 1;
-}
-
-// 시각/사운드 효과 1개. 단발 알림성 효과는 메시지로 따로 빼지 않고 effects 에 entry로.
-// 게임 state 변경 / 풍부한 페이로드가 필요한 경우는 여전히 별도 메시지.
-message Effect {
-  EffectType type = 1;
-  int64 delay_ms = 2;
 }
 
 // 클라이언트 → 서버
@@ -70,7 +64,5 @@ message ServerMessage {
     PlayerLeft player_left = 13;
     StreamError stream_error = 14;
     GameCanceled game_canceled = 15;
-    // 16 = 폐기: BlockMatchedSpecialEffect 스트림 → BlockMatched.ability 필드로 격하.
-    reserved 16;
   }
 }
