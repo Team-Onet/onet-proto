@@ -60,13 +60,13 @@ message RoomJoined {
 // 모든 플레이어 입장 완료 → 게임 시작.
 // 이 메시지 이후 첫 번째 NextTurn 이 전송된다.
 message GameStarted {
-  int64 started_at_ms = 1;                                    // 서버 기준 게임 시작 타임스탬프
-  repeated SpecialTileSummary special_tile_summary = 2;       // 이번 게임에 배치된 특수타일 카탈로그 (종류 + pair 수). HIDDEN 포함 - 유저 긴장 UX.
+  int64 started_at_ms = 1;                                      // 서버 기준 게임 시작 타임스탬프
+  repeated SpecialBlockSummary special_block_summary = 2;       // 이번 게임에 배치된 특수 블록 카탈로그 (종류 + 개수). HIDDEN 포함 - 유저 긴장 UX.
 }
 
-// 이번 게임에 활성화된 특수타일 종류/개수 요약. 실 위치는 BlockData.effect_type (visibility 준수) 로 별도 전달.
-message SpecialTileSummary {
-  EffectType special_tile_type = 1;
+// 이번 게임에 활성화된 특수 블록 종류/개수 요약. 실 위치는 BlockData.effect_type (visibility 준수) 로 별도 전달.
+message SpecialBlockSummary {
+  EffectType special_block_type = 1;
   int32 tile_count = 2;
 }
 
