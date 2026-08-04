@@ -64,9 +64,9 @@ message GameStarted {
   repeated SpecialBlockSummary special_block_summary = 2;       // 이번 게임에 배치된 특수 블록 카탈로그 (종류 + 개수). HIDDEN 포함 - 유저 긴장 UX.
 }
 
-// 이번 게임에 활성화된 특수 블록 종류/개수 요약. 실 위치는 BlockData.effect_type (visibility 준수) 로 별도 전달.
+// 이번 게임에 활성화된 특수 블록 종류/개수 요약. 실 위치는 BlockData.special_block_type (visibility 준수) 로 별도 전달.
 message SpecialBlockSummary {
-  EffectType special_block_type = 1;
+  SpecialBlockType special_block_type = 1;
   int32 tile_count = 2;
 }
 
@@ -247,8 +247,8 @@ message BoardState {
 
 message BlockData {
   BlockPos pos = 1;
-  int32 art_num = 2;         // 블록 종류 식별자. 같은 art_num 끼리 매칭 가능.
-  EffectType effect_type = 3; // 특수타일 종류. UNSPECIFIED = 일반 블록 or 히든 특수타일 (서버가 마스킹).
+  int32 art_num = 2;                       // 블록 종류 식별자. 같은 art_num 끼리 매칭 가능.
+  SpecialBlockType special_block_type = 3; // 특수 블록 종류. UNSPECIFIED = 일반 블록 or 히든 특수 블록 (서버가 마스킹).
 }
 
 // 점유된 슬롯 정보.
