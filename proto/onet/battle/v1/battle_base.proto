@@ -8,7 +8,6 @@ option java_outer_classname = "BattleBaseProto";
 option java_package = "com.onet.battle.v1";
 
 import "onet/battle/v1/battle.proto";
-import "onet/battle/v1/battle_types.proto";
 
 // ============================================================
 // 배틀 서비스
