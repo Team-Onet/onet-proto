@@ -81,14 +81,15 @@ message SpecialBlockSummary {
 // combo_count: 현재 플레이어가 보유한 콤보 카운트. 매칭 직전 값.
 message NextTurn {
   string player_id = 1;
-  int32 turn_time_ms = 2;       // 이번 턴 총 제한시간 (ms), 콤보 보너스 포함된 합계
+  int32 turn_time_ms = 2;       // 이번 턴 총 제한시간 (ms), 팀 콤보 보너스 포함된 합계
   int32 turn_number = 3;        // 전체 턴 카운터 (1부터 시작)
   bool is_prev_timeout = 4;     // 이전 턴이 타임아웃으로 종료된 경우 true
   int64 turn_end_at_unix_ms = 5; // 이번 턴 종료 절대시각 (서버 unix ms)
-  int64 combo_deadline_unix_ms = 6; // 콤보 윈도우 만료 절대시각 (0 = 미적용)
-  int32 combo_count = 7;        // 매칭 직전 콤보 카운트 (0 = 콤보 없음)
-  int32 combo_bonus_ms = 8;     // turn_time_ms 중 콤보 보너스 분량 (ms). 0 = 보너스 없음/봇
+  int64 combo_deadline_unix_ms = 6; // 콤보 윈도우 만료 절대시각. 개인/팀 판정 통일 사용. 0 = 미적용.
+  int32 combo_count = 7;        // 매칭 직전 개인 콤보 카운트 (0 = 콤보 없음)
+  int32 combo_bonus_ms = 8;     // turn_time_ms 중 팀 콤보 보너스 분량 (ms). 0 = 보너스 없음/봇
   repeated Effect effects = 9;  // 이 이벤트에서 재생할 연출 시퀀스 (COMBO_BREAK 등)
+  int32 team_combo_count = 10;  // 매칭 직전 팀 콤보 카운트 (0 = 팀 콤보 없음)
 }
 
 // 블록 선택/해제 브로드캐스트.
@@ -109,11 +110,13 @@ message BlockMatched {
   repeated OccupiedSlot occupied = 5;               // 이번 매칭으로 점유된 슬롯 목록
   int32 match_score = 6;                            // 획득 점수 (점유 슬롯 합산)
   int32 remaining_block_count = 7;                  // 매칭 후 남은 블록 수
-  int32 combo_count = 8;                            // 이 매칭 직후 콤보 카운트 (0 = 봇 등 콤보 미적용)
+  int32 combo_count = 8;                            // 이 매칭 직후 개인 콤보 카운트 (0 = 봇/자동 매칭)
   bool is_auto_match = 9;                           // true = 서버 자동 매칭 (턴 timeout 트리거). false = 사용자 매칭
   BlockType block_type = 10;                        // 매칭된 블록 종류 (NORMAL / 특수)
   BlockMatchedSpecialAbility ability = 11;          // 특수 블록 매칭 시 발동된 능력 (nullable, 일반 매칭은 unset)
   repeated Effect effects = 12;                     // 이 이벤트에서 재생할 연출 시퀀스 (BLOCK_MATCHED, FEVER, SCORE_BONUS 등)
+  int32 team_combo_count = 13;                      // 이 매칭 직후 팀 콤보 카운트 (0 = 자동 매칭/팀 콤보 리셋)
+  int32 team_combo_bonus = 14;                      // 팀 콤보 보너스 누적 pt (매칭 직후 시점). 매 매칭 시 실시간 스코어 표시용.
 }
 
 // 특수 블록 매칭 시 발동 능력. BlockMatched.ability 필드 타입 (별개 스트림 아님).
@@ -286,8 +289,9 @@ message TeamResult {
   int32 tile_count = 3;
   bool is_winner = 4;
   int32 bonus_score = 5;   // 보너스 특수타일 팀 합계
-  int32 combo_bonus = 6;   // 콤보 보너스 팀 합계 (3콤보 이상 매칭 시 +1 누적)
-  int32 total_score = 7;   // 승리 판정 기준 총점
+  int32 combo_bonus = 6;   // 팀 콤보 보너스 (팀 트랙 3콤보 이상 매칭 시 +1 누적)
+  int32 total_score = 7;   // 승리 판정 기준 총점 = tile + bonus + team combo bonus
+  int32 max_combo = 8;     // 이 팀이 이번 게임에 도달한 최고 팀 콤보
 }
 
 // 플레이어 개인 결과. total_score = tile_count + bonus_score + combo_bonus.
