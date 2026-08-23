@@ -127,7 +127,8 @@ message BlockMatchedSpecialAbility {
     ScoreBonusAbility score_bonus = 1;
     TrapAbility trap = 2;
     FortifyAbility fortify = 3;
-    // 향후: BombAbility bomb = 4; ThiefAbility thief = 5;
+    ThiefAbility thief = 4;
+    // 향후: BombAbility bomb = 5;
   }
 }
 
@@ -144,6 +145,15 @@ message TrapAbility {
 
 // 성벽 특수 블록 매칭 결과. BlockMatched.occupied 슬롯이 fortified 상태로 마킹 → 도둑 등 뺏기에 저항.
 message FortifyAbility {
+}
+
+// 도둑 특수 블록 매칭 결과. 상대팀 점유 슬롯을 랜덤 2~6 개 강탈하여 매칭 팀 소유로 이관.
+// - 상대 점유 K < N 이면 K 개 전부 강탈 (부족분 무시)
+// - 상대 점유 0 이면 미점유 슬롯 N 개 점령 (부족하면 있는 만큼)
+// - fortified 슬롯은 강탈 대상에서 제외
+// stolen_slots = 이번 발동으로 소유권 이동된 슬롯 (신규 소유자 = 매칭 팀). 클라 강조 애니메이션용.
+message ThiefAbility {
+  repeated OccupiedSlot stolen_slots = 1;
 }
 
 // 매칭 실패 브로드캐스트 (경로 없음 or 타입 불일치).
