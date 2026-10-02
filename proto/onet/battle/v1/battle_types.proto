@@ -50,6 +50,8 @@ enum EffectType {
   EFFECT_TYPE_TRAP_SPRUNG = 6;       // 함정 특수 블록 매칭 → 반대편 팀 소유로 반전 연출
   EFFECT_TYPE_FORTIFY = 7;           // 성벽 특수 블록 매칭 → 획득 슬롯 fortified 형성 연출
   EFFECT_TYPE_STEAL = 8;             // 도둑 특수 블록 매칭 → 상대 슬롯 강탈 연출
+  EFFECT_TYPE_JOKER_ACTIVATED = 9;   // 조커 특수 턴 개시 연출 (NextTurn.effects)
+  EFFECT_TYPE_JOKER_MATCHED = 10;    // 조커 교차 매칭 → 짝 보정 블록 제거 연출 (BlockMatched.effects)
   // 향후: COMBO, MILESTONE, STREAK, ITEM_* 등
 }
 
@@ -63,7 +65,13 @@ enum BlockType {
   TRAP     = 4;  // 함정 특수 블록 (매칭 시 상대에게 슬롯 이전)
   FORTIFY  = 5;  // 성벽 특수 블록 (매칭 시 슬롯 fortified 마킹)
   THIEF    = 6;  // 도둑 특수 블록 (매칭 시 상대팀 점유 슬롯 랜덤 2~6 강탈, 성벽 slot skip)
-  // 향후: BOMB, WALL, JOKER 등
+  // 향후: BOMB, WALL 등
+}
+
+// 특수 턴 어빌리티. NextTurn.special_turn_abilities 에 실려 해당 턴 한정 규칙 변경을 알린다. 복수 동시 적용 가능.
+enum SpecialTurnAbilityType {
+  SPECIAL_TURN_ABILITY_TYPE_UNSPECIFIED = 0;
+  SPECIAL_TURN_ABILITY_TYPE_JOKER = 1;  // 이번 턴 모든 블록 상호 매칭 가능. 첫 매칭 성공 시 해제
 }
 
 // 셔플 트리거 유형. `BoardShuffled.reason` 에 실려 클라가 셔플 원인을 인지한다.

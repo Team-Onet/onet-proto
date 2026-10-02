@@ -88,8 +88,9 @@ message NextTurn {
   int64 combo_deadline_unix_ms = 6; // 콤보 윈도우 만료 절대시각. 개인/팀 판정 통일 사용. 0 = 미적용.
   int32 combo_count = 7;        // 매칭 직전 개인 콤보 카운트 (0 = 콤보 없음)
   int32 combo_bonus_ms = 8;     // turn_time_ms 중 팀 콤보 보너스 분량 (ms). 0 = 보너스 없음/봇
-  repeated Effect effects = 9;  // 이 이벤트에서 재생할 연출 시퀀스 (COMBO_BREAK 등)
+  repeated Effect effects = 9;  // 이 이벤트에서 재생할 연출 시퀀스 (COMBO_BREAK, JOKER_ACTIVATED 등)
   int32 team_combo_count = 10;  // 매칭 직전 팀 콤보 카운트 (0 = 팀 콤보 없음)
+  repeated SpecialTurnAbilityType special_turn_abilities = 11;  // 이번 턴 활성 특수 턴 어빌리티. 일반 턴 = 빈 리스트
 }
 
 // 블록 선택/해제 브로드캐스트.
@@ -117,11 +118,12 @@ message BlockMatched {
   repeated Effect effects = 12;                     // 이 이벤트에서 재생할 연출 시퀀스 (BLOCK_MATCHED, FEVER, SCORE_BONUS 등)
   int32 team_combo_count = 13;                      // 이 매칭 직후 팀 콤보 카운트 (0 = 자동 매칭/팀 콤보 리셋)
   int32 team_combo_bonus = 14;                      // 팀 콤보 보너스 누적 pt (매칭 직후 시점). 매 매칭 시 실시간 스코어 표시용.
+  repeated BlockPos joker_removed_blocks = 15;      // 조커 교차 매칭 (pos1/pos2 artNum 상이) 시 짝 보정으로 추가 제거된 블록 (0 or 2개, 점령 X)
 }
 
 // 특수 블록 매칭 시 발동 능력. BlockMatched.ability 필드 타입 (별개 스트림 아님).
 // oneof 로 능력별 payload 표현. 연출 재생은 BlockMatched.effects[] 가 담당.
-// 셔플 특수 블록은 여기 담기지 않고 BlockMatched 직후 BoardShuffled(reason=SPECIAL_TILE) 로 직접 스트림.
+// 셔플 특수 블록은 여기 담기지 않고 BlockMatched 연출 (effects 합) 종료 후 BoardShuffled(reason=SPECIAL_TILE) 로 스트림.
 message BlockMatchedSpecialAbility {
   oneof ability {
     ScoreBonusAbility score_bonus = 1;
