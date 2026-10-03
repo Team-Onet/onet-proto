@@ -26,7 +26,7 @@ service BattleService {
 
 // 모든 ServerMessage 공통 메타.
 // server_time_ms: 메시지 발행 시점. 클라는 (local_now - server_time_ms) 를 drift 로 캐싱.
-// 연출 시퀀스는 각 이벤트 message 안 `repeated Effect effects` 필드로 이관됨.
+// 연출 시퀀스는 header 가 아닌 각 이벤트 message 의 `repeated Effect effects` 필드에 실림.
 // 예: BlockMatched.effects, BoardShuffled.effects, NextTurn.effects, ItemUsed.effects.
 // Effect message 정의는 battle_types.proto 참조.
 message ResponseHeader {

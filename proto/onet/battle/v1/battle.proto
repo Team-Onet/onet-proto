@@ -101,61 +101,76 @@ message BlockSelected {
   bool is_deselected = 3;
 }
 
-// 매칭 성공 브로드캐스트. 이후 서버가 NextTurn 을 전송한다.
-// ability 필드 = 매칭 블록이 특수 블록일 때 발동된 능력. 일반 매칭은 unset (BlockType=NORMAL).
+// 매칭 성공 브로드캐스트.
+// 서버는 effects[] delay 합계만큼 대기 후 다음 메시지 송출: GameResult (블록 0) / BoardShuffled → NextTurn (셔플) / NextTurn.
+// 블록 제거 대상 = pos1, pos2 + joker_removed_blocks + ability.bomb.bombed_slots 좌표. remaining_block_count 는 이 전부 반영된 값.
+// effects 재생 중 SelectBlock 은 StreamError(NOT_YOUR_TURN) 로 거부됨 → 다음 NextTurn 까지 입력 잠금 권장.
 message BlockMatched {
   string player_id = 1;
   BlockPos pos1 = 2;
   BlockPos pos2 = 3;
   repeated BlockPos path = 4;                       // 경로상 모든 좌표 (pos1, pos2 포함)
-  repeated OccupiedSlot occupied = 5;               // 이번 매칭으로 점유된 슬롯 목록
-  int32 match_score = 6;                            // 획득 점수 (점유 슬롯 합산)
-  int32 remaining_block_count = 7;                  // 매칭 후 남은 블록 수
+  repeated OccupiedSlot occupied = 5;               // 매칭 경로로 점유된 슬롯 (pos1/pos2 칸 포함). 특수블록 추가 점령분은 ability 쪽 필드
+  int32 match_score = 6;                            // 경로 점수 (미점유 1 / 상대 점령 2 / 자기 점령 0 합산). 연출 참고용, 최종 점수와 무관
+  int32 remaining_block_count = 7;                  // 매칭 후 남은 블록 수 (조커 보정 / 폭탄 추가 제거 반영)
   int32 combo_count = 8;                            // 이 매칭 직후 개인 콤보 카운트 (0 = 봇/자동 매칭)
   bool is_auto_match = 9;                           // true = 서버 자동 매칭 (턴 timeout 트리거). false = 사용자 매칭
-  BlockType block_type = 10;                        // 매칭된 블록 종류 (NORMAL / 특수)
-  BlockMatchedSpecialAbility ability = 11;          // 특수 블록 매칭 시 발동된 능력 (nullable, 일반 매칭은 unset)
-  repeated Effect effects = 12;                     // 이 이벤트에서 재생할 연출 시퀀스 (BLOCK_MATCHED, FEVER, SCORE_BONUS 등)
+  BlockType block_type = 10;                        // 발동된 특수블록 종류. 일반 매칭 / 무효화된 함정 = NORMAL. SHUFFLE 은 ability 없이 이 값만 옴
+  BlockMatchedSpecialAbility ability = 11;          // 특수블록 발동 결과. 일반 매칭 / 셔플 = unset
+  repeated Effect effects = 12;                     // 연출 시퀀스. 순서 = BLOCK_MATCHED → JOKER_MATCHED → 특수블록 연출 (SCORE_BONUS/TRAP_SPRUNG/FORTIFY/STEAL/BOMB 중 0~1) → FEVER
   int32 team_combo_count = 13;                      // 이 매칭 직후 팀 콤보 카운트 (0 = 자동 매칭/팀 콤보 리셋)
   int32 team_combo_bonus = 14;                      // 팀 콤보 보너스 누적 pt (매칭 직후 시점). 매 매칭 시 실시간 스코어 표시용.
   repeated BlockPos joker_removed_blocks = 15;      // 조커 교차 매칭 (pos1/pos2 artNum 상이) 시 짝 보정으로 추가 제거된 블록 (0 or 2개, 점령 X)
 }
 
-// 특수 블록 매칭 시 발동 능력. BlockMatched.ability 필드 타입 (별개 스트림 아님).
-// oneof 로 능력별 payload 표현. 연출 재생은 BlockMatched.effects[] 가 담당.
-// 셔플 특수 블록은 여기 담기지 않고 BlockMatched 연출 (effects 합) 종료 후 BoardShuffled(reason=SPECIAL_TILE) 로 스트림.
+// 특수블록 발동 결과 payload (BlockMatched.ability). 연출 타이밍은 BlockMatched.effects 가 담당.
+// 셔플 특수블록은 여기 없음 → BlockMatched 연출 종료 후 BoardShuffled(reason=SPECIAL_TILE) 별도 수신.
 message BlockMatchedSpecialAbility {
   oneof ability {
     ScoreBonusAbility score_bonus = 1;
     TrapAbility trap = 2;
     FortifyAbility fortify = 3;
     ThiefAbility thief = 4;
-    // 향후: BombAbility bomb = 5;
+    BombAbility bomb = 5;
   }
 }
 
 // 보너스 특수 블록 매칭 결과. 연출 트리거는 BlockMatched.effects[EFFECT_TYPE_SCORE_BONUS].
 message ScoreBonusAbility {
   int32 bonus_score = 1;
-  int32 total_score = 2;  // drift 검증
+  int32 total_score = 2;  // 매칭자 개인 보너스 누적 합계 (클라 누적값 검증용)
 }
 
-// 함정 특수 블록 매칭 결과. 매칭한 슬롯이 반대편 팀 소유로 넘어감. 결과는 BlockMatched.occupied 에 이미 반영.
-// TODO: 시야 마스킹 (상대에게 안 보임) 별도 이슈 (broadcaster per-recipient).
+// 함정 특수블록 발동. 매칭 경로 점령이 상대팀 소유가 됨 → BlockMatched.occupied 의 player_id/team_id = 상대팀 (매칭 시도자는 BlockMatched.player_id).
+// 상대팀이 없으면 (이탈 등) 함정 무효 → 일반 매칭 (block_type=NORMAL, ability unset).
+// 배치 위치는 HIDDEN (BlockData.block_type=UNSPECIFIED 로 마스킹).
 message TrapAbility {
 }
 
-// 성벽 특수 블록 매칭 결과. BlockMatched.occupied 슬롯이 fortified 상태로 마킹 → 도둑 등 뺏기에 저항.
+// 성벽 특수블록 발동. BlockMatched.occupied 슬롯이 fortified 가 됨 → 이후 상대 매칭 경로 / 도둑 강탈로 소유권 이전 안 됨.
+// 재접속 / 동기화 시 상태는 SlotData.fortified 로 복원.
 message FortifyAbility {
 }
 
-// 도둑 특수 블록 매칭 결과. 상대팀 점유 슬롯을 랜덤 2~6 개 강탈하여 매칭 팀 소유로 이관.
-// - 상대 점유 K < N 이면 K 개 전부 강탈 (부족분 무시)
-// - 상대 점유 0 이면 미점유 슬롯 N 개 점령 (부족하면 있는 만큼)
-// - fortified 슬롯은 강탈 대상에서 제외
-// stolen_slots = 이번 발동으로 소유권 이동된 슬롯 (신규 소유자 = 매칭 팀). 클라 강조 애니메이션용.
+// 도둑 특수블록 발동. 랜덤 N (서버 스펙 min~max값) 슬롯을 매칭 팀 소유로 변경.
+// - 상대 점령 슬롯 K >= N → 랜덤 N 개 강탈 / 0 < K < N → K 개 전부
+// - 상대 점령 0 → 블록 없는 미점령 슬롯 N 개 점령 (부족하면 있는 만큼)
+// - fortified 슬롯 제외
+// stolen_slots = 소유권이 바뀐 슬롯 (player_id/team_id = 매칭자). 위치 무관 (경로와 별개).
+//   is_retaken = 상대 점령 강탈 시 true, 미점령 점령 시 false (한 번의 발동 안에서는 전부 동일).
 message ThiefAbility {
   repeated OccupiedSlot stolen_slots = 1;
+}
+
+// 폭탄 특수블록 발동. 일반 매칭 점령에 더해 랜덤 N (서버 스펙 min~max값) 블록 쌍을 경로 무관하게 추가 제거 + 그 칸 점령.
+// - 대상 = 같은 art_num 2개 쌍. 일반 블록 쌍 우선, 부족 시 특수블록 포함 쌍 (제거된 특수블록 능력은 미발동)
+// - 남은 쌍 < N 이면 남은 쌍만. 0 이면 bombed_slots 빈 리스트 + effects 에 BOMB 없음
+// bombed_slots = 제거할 블록 좌표 = 점령 슬롯 (player_id/team_id = 매칭자, is_retaken 항상 false).
+//   [0],[1] = 1번째 쌍, [2],[3] = 2번째 쌍 … 순서 보장 (쌍별 연출용).
+// 서버 상태는 수신 시점에 이미 확정. 클라는 EFFECT_TYPE_BOMB 구간 동안 제거/점령 표시를 늦춰도 되나,
+// 그 전에 BoardShuffled / NextTurn 이 오면 즉시 반영 후 처리.
+message BombAbility {
+  repeated OccupiedSlot bombed_slots = 1;
 }
 
 // 매칭 실패 브로드캐스트 (경로 없음 or 타입 불일치).
@@ -252,7 +267,7 @@ message PlayerInfo {
 
 // 보드 전체 상태 스냅샷.
 // RoomJoined 및 BoardSyncResponse 에서 사용.
-// width/height/seed/map_id 는 RoomJoined 에서만 의미있고 BoardSyncResponse 에서는 무시해도 됨.
+// width/height/seed 는 RoomJoined 에서만 의미있고 BoardSyncResponse 에서는 무시해도 됨.
 message BoardState {
   repeated BlockData blocks = 1;         // 현재 남아있는 블록 목록
   repeated SlotData occupied_slots = 2;  // 점유된 슬롯만 포함 (미점유 생략)
@@ -274,13 +289,12 @@ message SlotData {
   BlockPos pos = 1;
   string occupied_player_id = 2;
   string occupied_team_id = 3;
-  bool fortified = 4;      // 성벽 특수타일 매칭으로 방어된 슬롯 - 상대 점령 저항 (도둑 등 향후 특수효과 대상)
+  bool fortified = 4;      // 성벽 특수블록으로 방어된 슬롯. 상대 매칭 경로 / 도둑 강탈로 소유권 안 바뀜
   bool trap_captured = 5;  // 함정 특수타일 매칭으로 획득한 슬롯 - 클라 시각 강조용 (표시 여부는 클라 판단)
 }
 
-// 매칭 성공 시 점유된 슬롯 상세 정보.
-// 성벽 fortified 마킹 알림 = BlockMatched.ability.fortify 필드로 담김 (여기 필드 X).
-// 재접속/스냅샷 복원용 fortified 상태 = SlotData.fortified 로 별도 전달.
+// 소유권이 바뀐 슬롯 1칸 (BlockMatched.occupied, ThiefAbility.stolen_slots, BombAbility.bombed_slots 공용).
+// fortified 여부는 여기 없음: 발동 알림 = BlockMatched.ability.fortify, 스냅샷 = SlotData.fortified.
 message OccupiedSlot {
   BlockPos pos = 1;
   string player_id = 2;
@@ -298,7 +312,7 @@ message BlockMove {
 message TeamResult {
   string team_id = 1;
   repeated string player_ids = 2;
-  int32 tile_count = 3;
+  int32 tile_count = 3;     // 게임 종료 시점 보드에서 이 팀이 점령 중인 슬롯 수. 기권/이탈 팀 = -1
   bool is_winner = 4;
   int32 bonus_score = 5;   // 보너스 특수타일 팀 합계
   int32 combo_bonus = 6;   // 팀 콤보 보너스 (팀 트랙 3콤보 이상 매칭 시 +1 누적)
@@ -310,7 +324,7 @@ message TeamResult {
 message PlayerResult {
   string player_id = 1;
   string team_id = 2;
-  int32 tile_count = 3;    // 점유한 슬롯 수
+  int32 tile_count = 3;    // 게임 중 획득한 슬롯 누적 수 (이후 빼앗긴 슬롯도 차감 안 함). 팀 tile_count 와 다를 수 있음
   int32 matched_count = 4; // 성공 매칭 횟수
   int32 timeout_count = 5; // 타임아웃 횟수
   int32 max_combo = 6;     // 게임 중 도달한 최고 콤보

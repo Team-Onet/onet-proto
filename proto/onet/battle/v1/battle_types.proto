@@ -43,8 +43,8 @@ message Effect {
 enum EffectType {
   EFFECT_TYPE_UNSPECIFIED = 0;
   EFFECT_TYPE_BLOCK_MATCHED = 1;     // 매칭 성공 점령 연출
-  EFFECT_TYPE_FEVER = 2;             // 피버 진입 (isHighlighted 발동)
-  EFFECT_TYPE_BOARD_SHUFFLED = 3;    // 자동 셔플 연출
+  EFFECT_TYPE_FEVER = 2;             // 피버 진입 (남은 블록 50% 이하 최초 도달 시 1회)
+  EFFECT_TYPE_BOARD_SHUFFLED = 3;    // 셔플 연출 (BoardShuffled.effects, reason 무관)
   EFFECT_TYPE_COMBO_BREAK = 4;       // 콤보 윈도우 만료/턴 타임아웃 등으로 콤보 끊김
   EFFECT_TYPE_SCORE_BONUS = 5;       // 보너스 특수 블록 매칭 시 +N 팝업 연출
   EFFECT_TYPE_TRAP_SPRUNG = 6;       // 함정 특수 블록 매칭 → 반대편 팀 소유로 반전 연출
@@ -52,20 +52,22 @@ enum EffectType {
   EFFECT_TYPE_STEAL = 8;             // 도둑 특수 블록 매칭 → 상대 슬롯 강탈 연출
   EFFECT_TYPE_JOKER_ACTIVATED = 9;   // 조커 특수 턴 개시 연출 (NextTurn.effects)
   EFFECT_TYPE_JOKER_MATCHED = 10;    // 조커 교차 매칭 → 짝 보정 블록 제거 연출 (BlockMatched.effects)
+  EFFECT_TYPE_BOMB = 11;             // 폭탄 특수블록 → 추가 블록 쌍 폭파 + 점령 연출 (BlockMatched.effects, bombed_slots 비면 생략)
   // 향후: COMBO, MILESTONE, STREAK, ITEM_* 등
 }
 
 // 블록 정체성 (BlockData.block_type, SpecialBlockSummary.block_type, BlockMatched.block_type).
 // NORMAL = 일반 블록. 나머지 = 특수 블록. 새 특수 블록 추가 시 이 enum 확장.
 enum BlockType {
-  UNSPECIFIED = 0;
+  UNSPECIFIED = 0;  // BlockData 에서는 HIDDEN 특수블록 마스킹 (일반 블록처럼 표시)
   NORMAL   = 1;  // 일반 블록
   BONUS    = 2;  // 보너스 특수 블록 (매칭 시 +N 점수)
   SHUFFLE  = 3;  // 셔플 특수 블록 (매칭 시 남은 블록 재배치)
   TRAP     = 4;  // 함정 특수 블록 (매칭 시 상대에게 슬롯 이전)
   FORTIFY  = 5;  // 성벽 특수 블록 (매칭 시 슬롯 fortified 마킹)
-  THIEF    = 6;  // 도둑 특수 블록 (매칭 시 상대팀 점유 슬롯 랜덤 2~6 강탈, 성벽 slot skip)
-  // 향후: BOMB, WALL 등
+  THIEF    = 6;  // 도둑 특수 블록 (매칭 시 상대팀 점유 슬롯 랜덤 min~max값 개 강탈, 성벽 slot skip)
+  BOMB     = 7;  // 폭탄 특수 블록 (매칭 시 랜덤 min~max값 블록 쌍 추가 제거 + 그 칸 점령)
+  // 향후: WALL 등
 }
 
 // 특수 턴 어빌리티. NextTurn.special_turn_abilities 에 실려 해당 턴 한정 규칙 변경을 알린다. 복수 동시 적용 가능.
