@@ -73,24 +73,17 @@ message SpecialBlockSummary {
 // 다음 턴 시작. 모든 플레이어에게 브로드캐스트.
 // turn_end_at_unix_ms: 이번 턴 종료 절대시각 (서버 unix ms). 클라는
 // server_time_ms 와 비교해 drift 보정 후 (deadline - now) 로 잔여시간 계산.
-// turn_time_ms 는 콤보 보너스가 합산된 최종 총합 (호환성 위해 이름 유지).
-// combo_bonus_ms 는 그 중 콤보로 획득한 분량만 별도로 노출 (turn_time_ms 에 이미 포함).
-// combo_deadline_unix_ms: 이번 턴 콤보 윈도우 만료 절대시각.
-//   - 0 이면 콤보 미적용 (봇 턴 등). 그 외에는 항상 turn_end_at_unix_ms 이하.
-//   - 클라는 (combo_deadline - now) 동안 매칭 시 콤보 누적.
-// combo_count: 현재 플레이어가 보유한 콤보 카운트. 매칭 직전 값.
+// tempo_deadline_unix_ms: 이번 턴 템포 판정 마감 절대시각. 마감 전 첫 매칭 = 달성 (BlockMatched.tempo_hit).
+//   - 0 이면 미적용 (봇 턴 등). 그 외에는 항상 turn_end_at_unix_ms 이하.
 message NextTurn {
   string player_id = 1;
-  int32 turn_time_ms = 2;       // 이번 턴 총 제한시간 (ms), 팀 콤보 보너스 포함된 합계
+  int32 turn_time_ms = 2;       // 이번 턴 총 제한시간 (ms)
   int32 turn_number = 3;        // 전체 턴 카운터 (1부터 시작)
   bool is_prev_timeout = 4;     // 이전 턴이 타임아웃으로 종료된 경우 true
   int64 turn_end_at_unix_ms = 5; // 이번 턴 종료 절대시각 (서버 unix ms)
-  int64 combo_deadline_unix_ms = 6; // 콤보 윈도우 만료 절대시각. 개인/팀 판정 통일 사용. 0 = 미적용.
-  int32 combo_count = 7;        // 매칭 직전 개인 콤보 카운트 (0 = 콤보 없음)
-  int32 combo_bonus_ms = 8;     // turn_time_ms 중 팀 콤보 보너스 분량 (ms). 0 = 보너스 없음/봇
-  repeated Effect effects = 9;  // 이 이벤트에서 재생할 연출 시퀀스 (COMBO_BREAK, JOKER_ACTIVATED 등)
-  int32 team_combo_count = 10;  // 매칭 직전 팀 콤보 카운트 (0 = 팀 콤보 없음)
-  repeated SpecialTurnAbilityType special_turn_abilities = 11;  // 이번 턴 활성 특수 턴 어빌리티. 일반 턴 = 빈 리스트
+  int64 tempo_deadline_unix_ms = 6; // 템포 판정 마감 절대시각. 0 = 미적용.
+  repeated Effect effects = 7;  // 이 이벤트에서 재생할 연출 시퀀스 (JOKER_ACTIVATED 등)
+  repeated SpecialTurnAbilityType special_turn_abilities = 8;  // 이번 턴 활성 특수 턴 어빌리티. 일반 턴 = 빈 리스트
 }
 
 // 블록 선택/해제 브로드캐스트.
@@ -113,14 +106,12 @@ message BlockMatched {
   repeated OccupiedSlot occupied = 5;               // 매칭 경로로 점유된 슬롯 (pos1/pos2 칸 포함). 특수블록 추가 점령분은 ability 쪽 필드
   int32 match_score = 6;                            // 경로 점수 (미점유 1 / 상대 점령 2 / 자기 점령 0 합산). 연출 참고용, 최종 점수와 무관
   int32 remaining_block_count = 7;                  // 매칭 후 남은 블록 수 (조커 보정 / 폭탄 추가 제거 반영)
-  int32 combo_count = 8;                            // 이 매칭 직후 개인 콤보 카운트 (0 = 봇/자동 매칭)
-  bool is_auto_match = 9;                           // true = 서버 자동 매칭 (턴 timeout 트리거). false = 사용자 매칭
-  BlockType block_type = 10;                        // 발동된 특수블록 종류. 일반 매칭 / 무효화된 함정 = NORMAL. SHUFFLE 은 ability 없이 이 값만 옴
-  BlockMatchedSpecialAbility ability = 11;          // 특수블록 발동 결과. 일반 매칭 / 셔플 = unset
-  repeated Effect effects = 12;                     // 연출 시퀀스. 순서 = BLOCK_MATCHED → JOKER_MATCHED → 특수블록 연출 (SCORE_BONUS/TRAP_SPRUNG/FORTIFY/STEAL/BOMB 중 0~1) → FEVER
-  int32 team_combo_count = 13;                      // 이 매칭 직후 팀 콤보 카운트 (0 = 자동 매칭/팀 콤보 리셋)
-  int32 team_combo_bonus = 14;                      // 팀 콤보 보너스 누적 pt (매칭 직후 시점). 매 매칭 시 실시간 스코어 표시용.
-  repeated BlockPos joker_removed_blocks = 15;      // 조커 교차 매칭 (pos1/pos2 artNum 상이) 시 짝 보정으로 추가 제거된 블록 (0 or 2개, 점령 X)
+  bool is_auto_match = 8;                           // true = 서버 자동 매칭 (턴 timeout 트리거). false = 사용자 매칭
+  BlockType block_type = 9;                         // 발동된 특수블록 종류. 일반 매칭 / 무효화된 함정 = NORMAL. SHUFFLE 은 ability 없이 이 값만 옴
+  BlockMatchedSpecialAbility ability = 10;          // 특수블록 발동 결과. 일반 매칭 / 셔플 = unset
+  repeated Effect effects = 11;                     // 연출 시퀀스. 순서 = BLOCK_MATCHED → JOKER_MATCHED → 특수블록 연출 (SCORE_BONUS/TRAP_SPRUNG/FORTIFY/STEAL/BOMB 중 0~1) → FEVER
+  repeated BlockPos joker_removed_blocks = 12;      // 조커 교차 매칭 (pos1/pos2 artNum 상이) 시 짝 보정으로 추가 제거된 블록 (0 or 2개, 점령 X)
+  bool tempo_hit = 13;                              // 템포 판정 마감 (NextTurn.tempo_deadline_unix_ms) 전 첫 매칭. 자동 매칭 / 봇 = false
 }
 
 // 특수블록 발동 결과 payload (BlockMatched.ability). 연출 타이밍은 BlockMatched.effects 가 담당.
@@ -308,28 +299,24 @@ message BlockMove {
   BlockPos to = 2;
 }
 
-// 팀 결과. total_score = tile_count + bonus_score + combo_bonus (서버 계산, 승리 판정 기준).
+// 팀 결과. total_score = tile_count + bonus_score (서버 계산, 승리 판정 기준).
 message TeamResult {
   string team_id = 1;
   repeated string player_ids = 2;
   int32 tile_count = 3;     // 게임 종료 시점 보드에서 이 팀이 점령 중인 슬롯 수. 기권/이탈 팀 = -1
   bool is_winner = 4;
   int32 bonus_score = 5;   // 보너스 특수타일 팀 합계
-  int32 combo_bonus = 6;   // 팀 콤보 보너스 (팀 트랙 3콤보 이상 매칭 시 +1 누적)
-  int32 total_score = 7;   // 승리 판정 기준 총점 = tile + bonus + team combo bonus
-  int32 max_combo = 8;     // 이 팀이 이번 게임에 도달한 최고 팀 콤보
+  int32 total_score = 6;   // 승리 판정 기준 총점 = tile + bonus
 }
 
-// 플레이어 개인 결과. total_score = tile_count + bonus_score + combo_bonus.
+// 플레이어 개인 결과. total_score = tile_count + bonus_score.
 message PlayerResult {
   string player_id = 1;
   string team_id = 2;
   int32 tile_count = 3;    // 게임 중 획득한 슬롯 누적 수 (이후 빼앗긴 슬롯도 차감 안 함). 팀 tile_count 와 다를 수 있음
   int32 matched_count = 4; // 성공 매칭 횟수
   int32 timeout_count = 5; // 타임아웃 횟수
-  int32 max_combo = 6;     // 게임 중 도달한 최고 콤보
-  int32 bonus_score = 7;   // 보너스 특수타일 개인 누적
-  int32 combo_bonus = 8;   // 콤보 보너스 개인 누적 (3콤보 이상 매칭 시 +1)
-  int32 total_score = 9;   // 개인 총점
+  int32 bonus_score = 6;   // 보너스 특수타일 개인 누적
+  int32 total_score = 7;   // 개인 총점
 }
 

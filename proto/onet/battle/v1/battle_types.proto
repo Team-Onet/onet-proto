@@ -45,15 +45,14 @@ enum EffectType {
   EFFECT_TYPE_BLOCK_MATCHED = 1;     // 매칭 성공 점령 연출
   EFFECT_TYPE_FEVER = 2;             // 피버 진입 (남은 블록 50% 이하 최초 도달 시 1회)
   EFFECT_TYPE_BOARD_SHUFFLED = 3;    // 셔플 연출 (BoardShuffled.effects, reason 무관)
-  EFFECT_TYPE_COMBO_BREAK = 4;       // 콤보 윈도우 만료/턴 타임아웃 등으로 콤보 끊김
-  EFFECT_TYPE_SCORE_BONUS = 5;       // 보너스 특수 블록 매칭 시 +N 팝업 연출
-  EFFECT_TYPE_TRAP_SPRUNG = 6;       // 함정 특수 블록 매칭 → 반대편 팀 소유로 반전 연출
-  EFFECT_TYPE_FORTIFY = 7;           // 성벽 특수 블록 매칭 → 획득 슬롯 fortified 형성 연출
-  EFFECT_TYPE_STEAL = 8;             // 도둑 특수 블록 매칭 → 상대 슬롯 강탈 연출
-  EFFECT_TYPE_JOKER_ACTIVATED = 9;   // 조커 특수 턴 개시 연출 (NextTurn.effects)
-  EFFECT_TYPE_JOKER_MATCHED = 10;    // 조커 교차 매칭 → 짝 보정 블록 제거 연출 (BlockMatched.effects)
-  EFFECT_TYPE_BOMB = 11;             // 폭탄 특수블록 → 추가 블록 쌍 폭파 + 점령 연출 (BlockMatched.effects, bombed_slots 비면 생략)
-  // 향후: COMBO, MILESTONE, STREAK, ITEM_* 등
+  EFFECT_TYPE_SCORE_BONUS = 4;       // 보너스 특수 블록 매칭 시 +N 팝업 연출
+  EFFECT_TYPE_TRAP_SPRUNG = 5;       // 함정 특수 블록 매칭 → 반대편 팀 소유로 반전 연출
+  EFFECT_TYPE_FORTIFY = 6;           // 성벽 특수 블록 매칭 → 획득 슬롯 fortified 형성 연출
+  EFFECT_TYPE_STEAL = 7;             // 도둑 특수 블록 매칭 → 상대 슬롯 강탈 연출
+  EFFECT_TYPE_JOKER_ACTIVATED = 8;   // 조커 특수 턴 개시 연출 (NextTurn.effects)
+  EFFECT_TYPE_JOKER_MATCHED = 9;     // 조커 교차 매칭 → 짝 보정 블록 제거 연출 (BlockMatched.effects)
+  EFFECT_TYPE_BOMB = 10;             // 폭탄 특수블록 → 추가 블록 쌍 폭파 + 점령 연출 (BlockMatched.effects, bombed_slots 비면 생략)
+  // 향후: MILESTONE, STREAK, ITEM_* 등
 }
 
 // 블록 정체성 (BlockData.block_type, SpecialBlockSummary.block_type, BlockMatched.block_type).
