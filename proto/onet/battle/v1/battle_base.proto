@@ -63,5 +63,6 @@ message ServerMessage {
     PlayerLeft player_left = 13;
     StreamError stream_error = 14;
     GameCanceled game_canceled = 15;
+    ConveyorShifted conveyor_shifted = 16;
   }
 }

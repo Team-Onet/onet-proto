@@ -186,6 +186,14 @@ message BoardShuffled {
   repeated Effect effects = 3;  // 이 이벤트에서 재생할 연출 시퀀스 (BOARD_SHUFFLED)
 }
 
+// 컨베이어 벨트 1칸 회전 브로드캐스트. 턴 전환마다 1회 (BlockMatched / TurnTimeout 연출 뒤, BoardShuffled · NextTurn 앞).
+// moves 대로 칸 내용물 이동: 칸 내용물 = 블록 + 점령 (팀 / fortified / trap_captured). 벨트 전 칸 (빈 칸 포함) from → to.
+// BoardState.conveyor_cells 는 벨트 / 포털 표시용. 이동 계산은 moves 만 사용.
+message ConveyorShifted {
+  repeated BlockMove moves = 1;  // 벨트 칸 이동 (from → to). BoardShuffled.moves 와 달리 점령 상태도 함께 이동
+  repeated Effect effects = 2;   // 이 이벤트에서 재생할 연출 시퀀스 (CONVEYOR_SHIFTED)
+}
+
 // 보드 전체 상태 동기화 응답.
 // turn_end_at_unix_ms: 현재 턴 종료 절대시각 (서버 unix ms).
 // 클라는 매 프레임 (deadline - now + drift) 로 잔여시간 계산.
@@ -267,6 +275,7 @@ message BoardState {
   int32 width = 5;   // 보드 가로 크기
   int32 height = 6;  // 보드 세로 크기
   int64 seed = 7;    // 셔플 동기화용 랜덤 시드
+  repeated BlockPos conveyor_cells = 8;  // 컨베이어 벨트 칸 (회전 방향 순서, 마지막 → 첫 칸 순환). 빈 리스트 = 벨트 없음
 }
 
 message BlockData {

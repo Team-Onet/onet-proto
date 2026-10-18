@@ -52,6 +52,7 @@ enum EffectType {
   EFFECT_TYPE_JOKER_ACTIVATED = 8;   // 조커 특수 턴 개시 연출 (NextTurn.effects)
   EFFECT_TYPE_JOKER_MATCHED = 9;     // 조커 교차 매칭 → 짝 보정 블록 제거 연출 (BlockMatched.effects)
   EFFECT_TYPE_BOMB = 10;             // 폭탄 특수블록 → 추가 블록 쌍 폭파 + 점령 연출 (BlockMatched.effects, bombed_slots 비면 생략)
+  EFFECT_TYPE_CONVEYOR_SHIFTED = 11; // 컨베이어 벨트 1칸 회전 연출 (ConveyorShifted.effects)
   // 향후: MILESTONE, STREAK, ITEM_* 등
 }
 
