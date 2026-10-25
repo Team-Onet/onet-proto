@@ -7,6 +7,7 @@ option java_multiple_files = true;
 option java_outer_classname = "BattleProto";
 option java_package = "com.onet.battle.v1";
 
+import "onet/battle/v1/battle_cheat.proto";
 import "onet/battle/v1/battle_types.proto";
 import "onet/common/v1/common_types.proto";
 import "onet/common/v1/error_code.proto";
@@ -19,6 +20,7 @@ import "onet/common/v1/error_code.proto";
 // 페이로드: roomId, playerId, nickname, level
 message JoinRoomRequest {
   string battle_token = 1;
+  CheatOptions cheat = 2;   // 테스트용 치트 (LOCAL / DEV 서버만 적용). 미지정 = 치트 없음
 }
 
 // 블록 좌표 선택.

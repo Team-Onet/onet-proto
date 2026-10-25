@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package onet.battle.v1;
+
+option csharp_namespace = "Onet.Battle.V1";
+option java_multiple_files = true;
+option java_outer_classname = "BattleCheatProto";
+option java_package = "com.onet.battle.v1";
+
+import "onet/battle/v1/battle_types.proto";
+
+// ============================================================
+// 테스트용 치트 (서버 LOCAL / DEV 에서만 적용, PROD 는 무시)
+// JoinRoomRequest.cheat 로 전달. 방 생성 시 첫 입장자 값 기준, SOLO_BOT 모드만 적용
+// ============================================================
+
+message CheatOptions {
+  // 강제 배치할 특수블록 종류 (종류당 개수는 모드 정책). 비어있으면 모드 정책 그대로. NORMAL / UNSPECIFIED 불가
+  repeated BlockType special_blocks = 1;
+  // 컨베이어 벨트 강제
+  ConveyorCheat conveyor = 2;
+}
+
+enum ConveyorCheat {
+  CONVEYOR_CHEAT_UNSPECIFIED = 0;  // 모드 정책 그대로
+  CONVEYOR_CHEAT_ON = 1;           // 켬 (모양 후보는 모드 정책, 모양 · 위치 · 방향 랜덤)
+  CONVEYOR_CHEAT_OFF = 2;          // 끔
+}
