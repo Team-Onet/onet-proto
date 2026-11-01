@@ -56,7 +56,7 @@ enum EffectType {
   // 향후: MILESTONE, STREAK, ITEM_* 등
 }
 
-// 블록 정체성 (BlockData.block_type, SpecialBlockSummary.block_type, BlockMatched.block_type).
+// 블록 정체성 (BlockData.block_type, SpecialBlockSummary.block_type).
 // NORMAL = 일반 블록. 나머지 = 특수 블록. 새 특수 블록 추가 시 이 enum 확장.
 enum BlockType {
   UNSPECIFIED = 0;  // BlockData 에서는 HIDDEN 특수블록 마스킹 (일반 블록처럼 표시)

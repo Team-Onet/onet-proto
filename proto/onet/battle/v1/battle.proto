@@ -98,22 +98,22 @@ message BlockSelected {
 
 // 매칭 성공 브로드캐스트.
 // 서버는 effects[] delay 합계만큼 대기 후 다음 메시지 송출: GameResult (블록 0) / BoardShuffled → NextTurn (셔플) / NextTurn.
-// 블록 제거 대상 = pos1, pos2 + joker_removed_blocks + ability.bomb.bombed_slots 좌표. remaining_block_count 는 이 전부 반영된 값.
+// 블록 제거 대상 = start_block, end_block + joker_removed_blocks + ability.bomb.bombed_slots 좌표. remaining_block_count 는 이 전부 반영된 값.
 // effects 재생 중 SelectBlock 은 StreamError(NOT_YOUR_TURN) 로 거부됨 → 다음 NextTurn 까지 입력 잠금 권장.
+// 발동 특수블록 = ability 의 oneof case. 둘 다 특수블록이면 start_block 만 발동. 셔플 블록 발동은 ability unset → BoardShuffled(reason=SPECIAL_TILE) 로 수신.
 message BlockMatched {
   string player_id = 1;
-  BlockPos pos1 = 2;
-  BlockPos pos2 = 3;
-  repeated BlockPos path = 4;                       // 경로상 모든 좌표 (pos1, pos2 포함)
-  repeated OccupiedSlot occupied = 5;               // 매칭 경로로 점유된 슬롯 (pos1/pos2 칸 포함). 특수블록 추가 점령분은 ability 쪽 필드
+  BlockData start_block = 2;                        // 매칭 시작 블록 (path 첫 칸)
+  BlockData end_block = 3;                          // 매칭 끝 블록 (path 마지막 칸)
+  repeated BlockPos path = 4;                       // 경로상 모든 좌표 (start_block, end_block 칸 포함)
+  repeated OccupiedSlot occupied = 5;               // 매칭 경로로 점유된 슬롯 (start_block/end_block 칸 포함). 특수블록 추가 점령분은 ability 쪽 필드
   int32 match_score = 6;                            // 경로 점수 (미점유 1 / 상대 점령 2 / 자기 점령 0 합산). 연출 참고용, 최종 점수와 무관
   int32 remaining_block_count = 7;                  // 매칭 후 남은 블록 수 (조커 보정 / 폭탄 추가 제거 반영)
   bool is_auto_match = 8;                           // true = 서버 자동 매칭 (턴 timeout 트리거). false = 사용자 매칭
-  BlockType block_type = 9;                         // 발동된 특수블록 종류. 일반 매칭 / 무효화된 함정 = NORMAL. SHUFFLE 은 ability 없이 이 값만 옴
-  BlockMatchedSpecialAbility ability = 10;          // 특수블록 발동 결과. 일반 매칭 / 셔플 = unset
-  repeated Effect effects = 11;                     // 연출 시퀀스. 순서 = BLOCK_MATCHED → JOKER_MATCHED → 특수블록 연출 (SCORE_BONUS/TRAP_SPRUNG/FORTIFY/STEAL/BOMB 중 0~1) → FEVER
-  repeated BlockPos joker_removed_blocks = 12;      // 조커 교차 매칭 (pos1/pos2 artNum 상이) 시 짝 보정으로 추가 제거된 블록 (0 or 2개, 점령 X)
-  bool tempo_hit = 13;                              // 템포 판정 마감 (NextTurn.tempo_deadline_unix_ms) 전 첫 매칭. 자동 매칭 / 봇 = false
+  BlockMatchedSpecialAbility ability = 9;           // 특수블록 발동 결과. 일반 매칭 / 무효화된 함정 / 셔플 = unset
+  repeated Effect effects = 10;                     // 연출 시퀀스. 순서 = BLOCK_MATCHED → JOKER_MATCHED → 특수블록 연출 (SCORE_BONUS/TRAP_SPRUNG/FORTIFY/STEAL/BOMB 중 0~1) → FEVER
+  repeated BlockPos joker_removed_blocks = 11;      // 조커 교차 매칭 (start_block/end_block art_num 상이) 시 짝 보정으로 추가 제거된 블록 (0 or 2개, 점령 X)
+  bool tempo_hit = 12;                              // 템포 판정 마감 (NextTurn.tempo_deadline_unix_ms) 전 첫 매칭. 자동 매칭 / 봇 = false
 }
 
 // 특수블록 발동 결과 payload (BlockMatched.ability). 연출 타이밍은 BlockMatched.effects 가 담당.
@@ -135,7 +135,7 @@ message ScoreBonusAbility {
 }
 
 // 함정 특수블록 발동. 매칭 경로 점령이 상대팀 소유가 됨 → BlockMatched.occupied 의 player_id/team_id = 상대팀 (매칭 시도자는 BlockMatched.player_id).
-// 상대팀이 없으면 (이탈 등) 함정 무효 → 일반 매칭 (block_type=NORMAL, ability unset).
+// 상대팀이 없으면 (이탈 등) 함정 무효 → 일반 매칭 (ability unset).
 // 배치 위치는 HIDDEN (BlockData.block_type=UNSPECIFIED 로 마스킹).
 message TrapAbility {
 }
@@ -170,8 +170,8 @@ message BombAbility {
 // 클라이언트는 선택을 초기화하고 재시도 허용.
 message BlockMatchFailed {
   string player_id = 1;
-  BlockPos pos1 = 2;
-  BlockPos pos2 = 3;
+  BlockData start_block = 2;
+  BlockData end_block = 3;
 }
 
 // 턴 타임아웃. 이후 서버가 NextTurn 을 전송한다.
