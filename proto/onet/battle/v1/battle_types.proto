@@ -53,6 +53,7 @@ enum EffectType {
   EFFECT_TYPE_JOKER_MATCHED = 9;     // 조커 교차 매칭 → 짝 보정 블록 제거 연출 (BlockMatched.effects)
   EFFECT_TYPE_BOMB = 10;             // 폭탄 특수블록 → 추가 블록 쌍 폭파 + 점령 연출 (BlockMatched.effects, bombed_slots 비면 생략)
   EFFECT_TYPE_CONVEYOR_SHIFTED = 11; // 컨베이어 벨트 1칸 회전 연출 (ConveyorShifted.effects)
+  EFFECT_TYPE_BONUS_BOX_BROKEN = 12; // 보너스 박스 파괴 연출 (BlockMatched.effects, 박스 종류 공통). 보상 연출은 뒤이어 별도 effect
   // 향후: MILESTONE, STREAK, ITEM_* 등
 }
 
@@ -83,4 +84,10 @@ enum ShuffleReason {
   SHUFFLE_REASON_NO_MOVES = 1;       // 매칭 가능 pair 없음 → 서버 자동 셔플
   SHUFFLE_REASON_ITEM = 2;           // ITEM_TYPE_SHUFFLE 아이템 사용
   SHUFFLE_REASON_SPECIAL_TILE = 3;   // 셔플 특수타일 매칭 발동
+}
+
+// 보너스 박스 종류 (BonusBoxState.type). 동작 (경로 통과마다 HP -1, 0 이면 파괴 + 막타 점령자 보상) 은 공통, 종류별로 보상 / 외형만 다름
+enum BonusBoxType {
+  BONUS_BOX_TYPE_UNSPECIFIED = 0;
+  BONUS_BOX_TYPE_NORMAL = 1;  // 일반 박스. 보상 = 특수블록 어빌리티 1개 랜덤 (BonusBoxHit.special_ability)
 }

@@ -19,6 +19,8 @@ message CheatOptions {
   repeated BlockType special_blocks = 1;
   // 컨베이어 벨트 강제
   ConveyorCheat conveyor = 2;
+  // 보드 오브젝트 (보너스 박스) 강제. 미지정 = 모드 정책, true / false = 켬 / 끔 (개수 · 수치는 모드 정책)
+  optional bool board_object = 3;
 }
 
 enum ConveyorCheat {

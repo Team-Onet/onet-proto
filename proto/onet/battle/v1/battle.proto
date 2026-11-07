@@ -101,8 +101,10 @@ message BlockSelected {
 // 블록 제거 대상 = start_block, end_block + joker_removed_blocks + ability.bomb.bombed_slots 좌표. remaining_block_count 는 이 전부 반영된 값.
 // effects 재생 중 SelectBlock 은 StreamError(NOT_YOUR_TURN) 로 거부됨 → 다음 NextTurn 까지 입력 잠금 권장.
 // 발동 특수블록 = ability 의 oneof case. 둘 다 특수블록이면 start_block 만 발동. 셔플 블록 발동은 ability unset → BoardShuffled(reason=SPECIAL_TILE) 로 수신.
+// 플레이어 필드 2개: player_id = 매칭한 플레이어 (입력 주체), owner_player_id = 소유권 결과 (점령 · 어빌리티 · 보상).
+// 함정처럼 소유권을 뒤집는 어빌리티가 있어 둘이 다를 수 있음.
 message BlockMatched {
-  string player_id = 1;
+  string player_id = 1;                             // 매칭한 플레이어 (입력 주체). 템포 · 매칭 스탯 · 선택 연출 기준
   BlockData start_block = 2;                        // 매칭 시작 블록 (path 첫 칸)
   BlockData end_block = 3;                          // 매칭 끝 블록 (path 마지막 칸)
   repeated BlockPos path = 4;                       // 경로상 모든 좌표 (start_block, end_block 칸 포함)
@@ -111,9 +113,31 @@ message BlockMatched {
   int32 remaining_block_count = 7;                  // 매칭 후 남은 블록 수 (조커 보정 / 폭탄 추가 제거 반영)
   bool is_auto_match = 8;                           // true = 서버 자동 매칭 (턴 timeout 트리거). false = 사용자 매칭
   BlockMatchedSpecialAbility ability = 9;           // 특수블록 발동 결과. 일반 매칭 / 무효화된 함정 / 셔플 = unset
-  repeated Effect effects = 10;                     // 연출 시퀀스. 순서 = BLOCK_MATCHED → JOKER_MATCHED → 특수블록 연출 (SCORE_BONUS/TRAP_SPRUNG/FORTIFY/STEAL/BOMB 중 0~1) → FEVER
+  repeated Effect effects = 10;                     // 연출 시퀀스. 순서 = BLOCK_MATCHED → JOKER_MATCHED → 특수블록 연출 (SCORE_BONUS/TRAP_SPRUNG/FORTIFY/STEAL/BOMB 중 0~1) → 보너스 박스 파괴마다 [BONUS_BOX_BROKEN → 보상 연출 0~1] → FEVER
   repeated BlockPos joker_removed_blocks = 11;      // 조커 교차 매칭 (start_block/end_block art_num 상이) 시 짝 보정으로 추가 제거된 블록 (0 or 2개, 점령 X)
   bool tempo_hit = 12;                              // 템포 판정 마감 (NextTurn.tempo_deadline_unix_ms) 전 첫 매칭. 자동 매칭 / 봇 = false
+  repeated BoardObjectPassed board_object_passes = 13;         // 매칭 경로가 지나간 보드 오브젝트 (경로 순서, 미파괴 타격 포함). 파괴된 오브젝트는 보드에서 제거. effects 의 n 번째 BONUS_BOX_BROKEN = 이 목록에서 n 번째로 파괴된 (remain 0) 박스
+  string owner_player_id = 14;                      // 소유권 결과 = occupied · ability (thief / bomb) 칸 소유자 + 보너스 박스 보상 수령자. 함정 매칭이면 상대, 그 외 player_id 와 동일 (항상 세팅)
+}
+
+// 매칭 경로가 지나간 보드 오브젝트 1개. 종류 = oneof case.
+message BoardObjectPassed {
+  BlockPos pos = 1;
+  oneof result {
+    BonusBoxHit bonus_box = 2;
+  }
+}
+
+// 보너스 박스 타격 결과. total / type 은 스냅샷 (BonusBoxState) 값 그대로 → 남은 HP 만 전송. remain = 0 → 파괴 (effects[EFFECT_TYPE_BONUS_BOX_BROKEN] 후 benefit 연출)
+message BonusBoxHit {
+  int32 remain = 1;  // 타격 후 남은 HP
+  // 파괴 시 보상. 미파괴 = unset. 보상 종류 = 세팅된 oneof 필드.
+  // 수령자 = 막타 점령자 = BlockMatched.owner_player_id (함정 매칭이면 상대, BlockMatched.player_id 와 다를 수 있음)
+  oneof benefit {
+    // 특수블록 어빌리티 (score_bonus / fortify / thief / bomb, TRAP · SHUFFLE 제외). 연출 = 해당 특수블록 effect.
+    // 추가 제거 블록 (bomb) 은 BlockMatched.remaining_block_count 에 반영됨
+    BlockMatchedSpecialAbility special_ability = 2;
+  }
 }
 
 // 특수블록 발동 결과 payload (BlockMatched.ability). 연출 타이밍은 BlockMatched.effects 가 담당.
@@ -189,10 +213,10 @@ message BoardShuffled {
 }
 
 // 컨베이어 벨트 1칸 회전 브로드캐스트. 턴 전환마다 1회 (BlockMatched / TurnTimeout 연출 뒤, BoardShuffled · NextTurn 앞).
-// moves 대로 칸 내용물 이동: 칸 내용물 = 블록 + 점령 (팀 / fortified / trap_captured). 벨트 전 칸 (빈 칸 포함) from → to.
+// moves 대로 칸 내용물 이동: 칸 내용물 = 블록 + 점령 (팀 / fortified / trap_captured) + 보드 오브젝트. 벨트 전 칸 (빈 칸 포함) from → to.
 // BoardState.conveyor_cells 는 벨트 / 포털 표시용. 이동 계산은 moves 만 사용.
 message ConveyorShifted {
-  repeated BlockMove moves = 1;  // 벨트 칸 이동 (from → to). BoardShuffled.moves 와 달리 점령 상태도 함께 이동
+  repeated BlockMove moves = 1;  // 벨트 칸 이동 (from → to). BoardShuffled.moves 와 달리 점령 상태 + 보드 오브젝트도 함께 이동
   repeated Effect effects = 2;   // 이 이벤트에서 재생할 연출 시퀀스 (CONVEYOR_SHIFTED)
 }
 
@@ -278,6 +302,22 @@ message BoardState {
   int32 height = 6;  // 보드 세로 크기
   int64 seed = 7;    // 셔플 동기화용 랜덤 시드
   repeated BlockPos conveyor_cells = 8;  // 컨베이어 벨트 칸 (회전 방향 순서, 마지막 → 첫 칸 순환). 빈 리스트 = 벨트 없음
+  repeated BoardObjectData board_objects = 9;  // 보드 오브젝트 (칸 위 물체, 블록 없는 칸에만 존재)
+}
+
+// 보드 오브젝트 스냅샷 1개. 종류 = oneof case. 보드 오브젝트는 셔플 (BoardShuffled) 대상 아님, 벨트 회전 (ConveyorShifted.moves) 은 칸 내용물로 함께 이동.
+message BoardObjectData {
+  BlockPos pos = 1;
+  oneof state {
+    BonusBoxState bonus_box = 2;
+  }
+}
+
+// 보너스 박스 스냅샷. 종류 (type) 는 스냅샷에만 → 타격 (BonusBoxHit) 은 pos 로 스냅샷 박스를 찾아 해석. 균열 연출 단계 = remain / total
+message BonusBoxState {
+  BonusBoxType type = 1;
+  int32 total = 2;
+  int32 remain = 3;
 }
 
 message BlockData {
@@ -299,6 +339,7 @@ message SlotData {
 // fortified 여부는 여기 없음: 발동 알림 = BlockMatched.ability.fortify, 스냅샷 = SlotData.fortified.
 message OccupiedSlot {
   BlockPos pos = 1;
+  // FIXME: player_id / team_id 필수 제거. 한 매칭의 소유자는 1명 → BlockMatched.owner_player_id 로 대체 (칸마다 반복 = 패킷 낭비). Unity 협의 + 버전업 시
   string player_id = 2;
   string team_id = 3;
   bool is_retaken = 4;  // 상대팀 슬롯을 역전 점유한 경우 true
