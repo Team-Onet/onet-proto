@@ -36,6 +36,27 @@ enum GameCancelReason {
 message Effect {
   EffectType type = 1;
   int64 delay_ms = 2;
+  // 발동 주체. 특수블록 · 보너스 박스 연출 (BOMB, BONUS_BOX_BROKEN 등) = 세팅.
+  // 메시지당 1회 · 칸 주체 없는 연출 (BLOCK_MATCHED, FEVER 등) = unset
+  EffectTrigger trigger = 3;
+}
+
+// 연출 발동 주체. 한 메시지에 같은 type 이 여러 번 올 때 (특수블록 + 박스 보상) 식별 키 + 연출 원점
+message EffectTrigger {
+  EffectTriggerType type = 1;
+  BlockPos pos = 2;  // 주체 칸 = 연출 원점
+}
+
+// 연출을 발동시킨 컨텐츠. 새 주체는 값 추가 (주체 데이터가 pos 로 부족하면 EffectTrigger 필드 확장 검토)
+enum EffectTriggerType {
+  EFFECT_TRIGGER_TYPE_UNSPECIFIED = 0;
+  EFFECT_TRIGGER_TYPE_SPECIAL_BLOCK = 1;  // 매칭한 특수블록 칸 → payload = BlockMatched.ability
+  EFFECT_TRIGGER_TYPE_BONUS_BOX = 2;      // 보너스 박스 칸 → payload = 같은 pos 의 BlockMatched.board_object_passes[].bonus_box.special_ability
+}
+
+message BlockPos {
+  int32 x = 1;
+  int32 y = 2;
 }
 
 // 클라 연출 재생 트리거. 매칭/셔플/턴 등 각 이벤트 message 안 repeated Effect 필드에 담겨 전달.

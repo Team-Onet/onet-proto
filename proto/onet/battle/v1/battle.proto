@@ -112,11 +112,11 @@ message BlockMatched {
   int32 match_score = 6;                            // 경로 점수 (미점유 1 / 상대 점령 2 / 자기 점령 0 합산). 연출 참고용, 최종 점수와 무관
   int32 remaining_block_count = 7;                  // 매칭 후 남은 블록 수 (조커 보정 / 폭탄 추가 제거 반영)
   bool is_auto_match = 8;                           // true = 서버 자동 매칭 (턴 timeout 트리거). false = 사용자 매칭
-  BlockMatchedSpecialAbility ability = 9;           // 특수블록 발동 결과. 일반 매칭 / 무효화된 함정 / 셔플 = unset
-  repeated Effect effects = 10;                     // 연출 시퀀스. 순서 = BLOCK_MATCHED → JOKER_MATCHED → 특수블록 연출 (SCORE_BONUS/TRAP_SPRUNG/FORTIFY/STEAL/BOMB 중 0~1) → 보너스 박스 파괴마다 [BONUS_BOX_BROKEN → 보상 연출 0~1] → FEVER
+  SpecialBlockAbility ability = 9;           // 특수블록 발동 결과. 일반 매칭 / 무효화된 함정 / 셔플 = unset
+  repeated Effect effects = 10;                     // 연출 시퀀스. 순서 = BLOCK_MATCHED → JOKER_MATCHED → 특수블록 연출 (SCORE_BONUS/TRAP_SPRUNG/FORTIFY/STEAL/BOMB 중 0~1) → 보너스 박스 파괴마다 [BONUS_BOX_BROKEN → 보상 연출 0~1] → FEVER. 같은 type 이 여러 번 올 수 있음 (특수블록 + 박스 보상) → Effect.trigger 로 발동 주체 · payload 식별
   repeated BlockPos joker_removed_blocks = 11;      // 조커 교차 매칭 (start_block/end_block art_num 상이) 시 짝 보정으로 추가 제거된 블록 (0 or 2개, 점령 X)
   bool tempo_hit = 12;                              // 템포 판정 마감 (NextTurn.tempo_deadline_unix_ms) 전 첫 매칭. 자동 매칭 / 봇 = false
-  repeated BoardObjectPassed board_object_passes = 13;         // 매칭 경로가 지나간 보드 오브젝트 (경로 순서, 미파괴 타격 포함). 파괴된 오브젝트는 보드에서 제거. effects 의 n 번째 BONUS_BOX_BROKEN = 이 목록에서 n 번째로 파괴된 (remain 0) 박스
+  repeated BoardObjectPassed board_object_passes = 13;         // 매칭 경로가 지나간 보드 오브젝트 (경로 순서, 미파괴 타격 포함). 파괴된 오브젝트는 보드에서 제거. 박스 연출 (BONUS_BOX_BROKEN · 보상) 의 Effect.trigger.pos = 해당 박스 pos
   string owner_player_id = 14;                      // 소유권 결과 = occupied · ability (thief / bomb) 칸 소유자 + 보너스 박스 보상 수령자. 함정 매칭이면 상대, 그 외 player_id 와 동일 (항상 세팅)
 }
 
@@ -136,13 +136,13 @@ message BonusBoxHit {
   oneof benefit {
     // 특수블록 어빌리티 (score_bonus / fortify / thief / bomb, TRAP · SHUFFLE 제외). 연출 = 해당 특수블록 effect.
     // 추가 제거 블록 (bomb) 은 BlockMatched.remaining_block_count 에 반영됨
-    BlockMatchedSpecialAbility special_ability = 2;
+    SpecialBlockAbility special_ability = 2;
   }
 }
 
-// 특수블록 발동 결과 payload (BlockMatched.ability). 연출 타이밍은 BlockMatched.effects 가 담당.
+// 특수블록 어빌리티 발동 결과 payload. 사용처 = BlockMatched.ability (매칭한 특수블록) / BonusBoxHit.special_ability (보너스 박스 파괴 보상). 연출 타이밍은 BlockMatched.effects 가 담당.
 // 셔플 특수블록은 여기 없음 → BlockMatched 연출 종료 후 BoardShuffled(reason=SPECIAL_TILE) 별도 수신.
-message BlockMatchedSpecialAbility {
+message SpecialBlockAbility {
   oneof ability {
     ScoreBonusAbility score_bonus = 1;
     TrapAbility trap = 2;
@@ -276,11 +276,6 @@ message GameCanceled {
 // ============================================================
 // 공통 타입
 // ============================================================
-
-message BlockPos {
-  int32 x = 1;
-  int32 y = 2;
-}
 
 message PlayerInfo {
   string player_id = 1;
