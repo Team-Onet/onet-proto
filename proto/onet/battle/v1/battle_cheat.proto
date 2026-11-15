@@ -11,7 +11,8 @@ import "onet/battle/v1/battle_types.proto";
 
 // ============================================================
 // 테스트용 치트 (서버 LOCAL / DEV 에서만 적용, PROD 는 무시)
-// JoinRoomRequest.cheat 로 전달. 방 생성 시 첫 입장자 값 기준, SOLO_BOT 모드만 적용
+// JoinRoomRequest.cheat 로 전달. 정책 치트 (special_blocks / conveyor / board_object) = 방 생성 시 첫 입장자 값 기준, SOLO_BOT 모드만.
+// 아이템 치트 (item_ids) = 입장 플레이어별, 전 모드
 // ============================================================
 
 message CheatOptions {
@@ -21,6 +22,8 @@ message CheatOptions {
   ConveyorCheat conveyor = 2;
   // 보드 오브젝트 (보너스 박스) 강제. 미지정 = 모드 정책, true / false = 켬 / 끔 (개수 · 수치는 모드 정책)
   optional bool board_object = 3;
+  // 이번 판에 가져갈 아이템 강제 (카탈로그 id, 최대 3종 · 중복 없음). 비어있으면 배틀 토큰 값 (로비 검증 경로)
+  repeated int32 item_ids = 4;
 }
 
 enum ConveyorCheat {

@@ -15,7 +15,7 @@
 ```
 proto/onet/
   common/v1/
-    common_types.proto   — MatchMode, ItemType 등 공통 enum/타입
+    common_types.proto   — MatchMode 등 공통 enum/타입
     error.proto          — ErrorDetail 메시지
     error_code.proto     — ErrorCode enum
   matchmaker/v1/

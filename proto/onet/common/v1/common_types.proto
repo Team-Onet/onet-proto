@@ -16,9 +16,16 @@ enum MatchMode {
   MATCH_MODE_TEAM_BOT = 40;  // 2v2 봇전
 }
 
+// 아이템 종류 = 발동 규칙. 같은 종류의 수치 변형은 item_id 로 구분 (카탈로그: item_id → type · activation · 수치)
 enum ItemType {
   ITEM_TYPE_UNSPECIFIED = 0;
-  ITEM_TYPE_SHUFFLE = 1;  // 보드 셔플
-  ITEM_TYPE_FIND = 2;     // 매칭 가능한 블록 쌍 힌트 제공
-  ITEM_TYPE_SPREAD = 3;   // 점유 확장 (TODO: 구현 예정)
+  ITEM_TYPE_TRAP = 1;  // 함정 설치: 고른 블록이 매칭되면 (누가 매칭하든) 점령이 매칭한 팀의 상대 팀으로
+}
+
+// 아이템 사용 방식 = UseItemRequest.targets 개수 규칙
+enum ItemActivation {
+  ITEM_ACTIVATION_UNSPECIFIED = 0;
+  ITEM_ACTIVATION_SELECT_BLOCK_SINGLE = 1;  // 블록 1칸 터치 (targets 1개)
+  ITEM_ACTIVATION_SELECT_BLOCK_PAIR = 2;    // 블록 2칸 터치 (targets 2개)
+  ITEM_ACTIVATION_AUTO_ACTIVE = 3;          // 즉시 발동 (targets 비움)
 }

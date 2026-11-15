@@ -26,6 +26,7 @@ enum ErrorCode {
   ERROR_CODE_ROOM_ALREADY_STARTED = 20003; // 이미 시작된 룸에 입장 시도
   ERROR_CODE_NOT_YOUR_TURN = 20004;        // 자기 턴이 아닐 때 행동 시도
   ERROR_CODE_INVALID_BLOCK_POS = 20005;    // 유효하지 않은 블록 좌표
+  ERROR_CODE_ITEM_UNAVAILABLE = 20006;     // 가져오지 않았거나 이미 쓴 아이템, 또는 이번 턴 이미 아이템 사용
 
   // 로비
   ERROR_CODE_INVALID_CREDENTIALS = 30000;

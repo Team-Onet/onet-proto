@@ -17,7 +17,7 @@ import "onet/common/v1/error_code.proto";
 // ============================================================
 
 // 룸 입장. battle_token 은 MatchMaker 가 발급한 JWT.
-// 페이로드: roomId, playerId, nickname, level
+// 페이로드: roomId, playerId, nickname, level, mode, mapId, mapType, itemIds
 message JoinRoomRequest {
   string battle_token = 1;
   CheatOptions cheat = 2;   // 테스트용 치트 (LOCAL / DEV 서버만 적용). 미지정 = 치트 없음
@@ -31,9 +31,12 @@ message SelectBlockRequest {
   int32 pos_y = 2;
 }
 
-// 아이템 사용 요청. 자신의 턴에서만 유효.
+// 아이템 사용 (대상 지정까지 한 번에 요청). 자기 턴 + 연출 입력 잠금 아닐 때만. 아이템별 판당 1회, 턴당 1개.
+// 사용해도 턴 유지 → 남은 턴 시간 동안 매칭 가능 (매칭 시 턴 종료). 턴이 끝난 뒤 도착한 요청은 거절 (= 사용 취소, 소모 X).
+// 성공 = ItemUsed (방 전원). 거절 = StreamError (NOT_YOUR_TURN / ITEM_UNAVAILABLE / INVALID_BLOCK_POS), 상태 변경 없음.
 message UseItemRequest {
-  onet.common.v1.ItemType item_type = 1;
+  int32 item_id = 1;              // 카탈로그 아이템 id. 보유 / 사용 여부 = PlayerInfo.items
+  repeated BlockPos targets = 2;  // 터치한 블록 칸. 개수 = 아이템 사용 방식 (ItemActivation: SINGLE 1 / PAIR 2 / AUTO_ACTIVE 0)
 }
 
 // 보드 전체 상태 동기화 요청.
@@ -77,6 +80,7 @@ message SpecialBlockSummary {
 // server_time_ms 와 비교해 drift 보정 후 (deadline - now) 로 잔여시간 계산.
 // tempo_deadline_unix_ms: 이번 턴 템포 판정 마감 절대시각. 마감 전 첫 매칭 = 달성 (BlockMatched.tempo_hit).
 //   - 0 이면 미적용 (봇 턴 등). 그 외에는 항상 turn_end_at_unix_ms 이하.
+// 재접속 스냅샷 NextTurn 이 턴 전환 중에 오면 turn_end_at_unix_ms / turn_time_ms = 0 (BoardSyncResponse 와 동일, 곧 실제 NextTurn 수신).
 message NextTurn {
   string player_id = 1;
   int32 turn_time_ms = 2;       // 이번 턴 총 제한시간 (ms)
@@ -102,7 +106,7 @@ message BlockSelected {
 // effects 재생 중 SelectBlock 은 StreamError(NOT_YOUR_TURN) 로 거부됨 → 다음 NextTurn 까지 입력 잠금 권장.
 // 발동 특수블록 = ability 의 oneof case. 둘 다 특수블록이면 start_block 만 발동. 셔플 블록 발동은 ability unset → BoardShuffled(reason=SPECIAL_TILE) 로 수신.
 // 플레이어 필드 2개: player_id = 매칭한 플레이어 (입력 주체), owner_player_id = 소유권 결과 (점령 · 어빌리티 · 보상).
-// 함정처럼 소유권을 뒤집는 어빌리티가 있어 둘이 다를 수 있음.
+// 설치 함정 (아이템) 처럼 소유권을 뒤집는 요소가 있어 둘이 다를 수 있음. 뒤집기는 매칭당 최대 1회 (함정 여러 개 동시 = 1회).
 message BlockMatched {
   string player_id = 1;                             // 매칭한 플레이어 (입력 주체). 템포 · 매칭 스탯 · 선택 연출 기준
   BlockData start_block = 2;                        // 매칭 시작 블록 (path 첫 칸)
@@ -112,12 +116,12 @@ message BlockMatched {
   int32 match_score = 6;                            // 경로 점수 (미점유 1 / 상대 점령 2 / 자기 점령 0 합산). 연출 참고용, 최종 점수와 무관
   int32 remaining_block_count = 7;                  // 매칭 후 남은 블록 수 (조커 보정 / 폭탄 추가 제거 반영)
   bool is_auto_match = 8;                           // true = 서버 자동 매칭 (턴 timeout 트리거). false = 사용자 매칭
-  SpecialBlockAbility ability = 9;           // 특수블록 발동 결과. 일반 매칭 / 무효화된 함정 / 셔플 = unset
-  repeated Effect effects = 10;                     // 연출 시퀀스. 순서 = BLOCK_MATCHED → JOKER_MATCHED → 특수블록 연출 (SCORE_BONUS/TRAP_SPRUNG/FORTIFY/STEAL/BOMB 중 0~1) → 보너스 박스 파괴마다 [BONUS_BOX_BROKEN → 보상 연출 0~1] → FEVER. 같은 type 이 여러 번 올 수 있음 (특수블록 + 박스 보상) → Effect.trigger 로 발동 주체 · payload 식별
+  SpecialBlockAbility ability = 9;           // 특수블록 발동 결과. 일반 매칭 / 셔플 = unset
+  repeated Effect effects = 10;                     // 연출 시퀀스. 순서 = BLOCK_MATCHED → JOKER_MATCHED → 설치 함정 TRAP_SPRUNG (trigger ITEM, 함정 칸마다) → 특수블록 연출 (SCORE_BONUS/FORTIFY/STEAL/BOMB 중 0~1) → 보너스 박스 파괴마다 [BONUS_BOX_BROKEN → 보상 연출 0~1] → FEVER. 같은 type 이 여러 번 올 수 있음 (특수블록 + 박스 보상) → Effect.trigger 로 발동 주체 · payload 식별
   repeated BlockPos joker_removed_blocks = 11;      // 조커 교차 매칭 (start_block/end_block art_num 상이) 시 짝 보정으로 추가 제거된 블록 (0 or 2개, 점령 X)
   bool tempo_hit = 12;                              // 템포 판정 마감 (NextTurn.tempo_deadline_unix_ms) 전 첫 매칭. 자동 매칭 / 봇 = false
   repeated BoardObjectPassed board_object_passes = 13;         // 매칭 경로가 지나간 보드 오브젝트 (경로 순서, 미파괴 타격 포함). 파괴된 오브젝트는 보드에서 제거. 박스 연출 (BONUS_BOX_BROKEN · 보상) 의 Effect.trigger.pos = 해당 박스 pos
-  string owner_player_id = 14;                      // 소유권 결과 = occupied · ability (thief / bomb) 칸 소유자 + 보너스 박스 보상 수령자. 함정 매칭이면 상대, 그 외 player_id 와 동일 (항상 세팅)
+  string owner_player_id = 14;                      // 소유권 결과 = occupied · ability (thief / bomb) 칸 소유자 + 보너스 박스 보상 수령자. 설치 함정 매칭이면 상대, 그 외 player_id 와 동일 (항상 세팅)
 }
 
 // 매칭 경로가 지나간 보드 오브젝트 1개. 종류 = oneof case.
@@ -132,9 +136,9 @@ message BoardObjectPassed {
 message BonusBoxHit {
   int32 remain = 1;  // 타격 후 남은 HP
   // 파괴 시 보상. 미파괴 = unset. 보상 종류 = 세팅된 oneof 필드.
-  // 수령자 = 막타 점령자 = BlockMatched.owner_player_id (함정 매칭이면 상대, BlockMatched.player_id 와 다를 수 있음)
+  // 수령자 = 막타 점령자 = BlockMatched.owner_player_id (설치 함정 매칭이면 상대, BlockMatched.player_id 와 다를 수 있음)
   oneof benefit {
-    // 특수블록 어빌리티 (score_bonus / fortify / thief / bomb, TRAP · SHUFFLE 제외). 연출 = 해당 특수블록 effect.
+    // 특수블록 어빌리티 (score_bonus / fortify / thief / bomb, SHUFFLE 제외). 연출 = 해당 특수블록 effect.
     // 추가 제거 블록 (bomb) 은 BlockMatched.remaining_block_count 에 반영됨
     SpecialBlockAbility special_ability = 2;
   }
@@ -145,10 +149,9 @@ message BonusBoxHit {
 message SpecialBlockAbility {
   oneof ability {
     ScoreBonusAbility score_bonus = 1;
-    TrapAbility trap = 2;
-    FortifyAbility fortify = 3;
-    ThiefAbility thief = 4;
-    BombAbility bomb = 5;
+    FortifyAbility fortify = 2;
+    ThiefAbility thief = 3;
+    BombAbility bomb = 4;
   }
 }
 
@@ -156,12 +159,6 @@ message SpecialBlockAbility {
 message ScoreBonusAbility {
   int32 bonus_score = 1;
   int32 total_score = 2;  // 매칭자 개인 보너스 누적 합계 (클라 누적값 검증용)
-}
-
-// 함정 특수블록 발동. 매칭 경로 점령이 상대팀 소유가 됨 → BlockMatched.occupied 의 player_id/team_id = 상대팀 (매칭 시도자는 BlockMatched.player_id).
-// 상대팀이 없으면 (이탈 등) 함정 무효 → 일반 매칭 (ability unset).
-// 배치 위치는 HIDDEN (BlockData.block_type=UNSPECIFIED 로 마스킹).
-message TrapAbility {
 }
 
 // 성벽 특수블록 발동. BlockMatched.occupied 슬롯이 fortified 가 됨 → 이후 상대 매칭 경로 / 도둑 강탈로 소유권 이전 안 됨.
@@ -204,7 +201,7 @@ message TurnTimeout {
 }
 
 // 보드 셔플 완료 브로드캐스트. 셔플 도메인 전용.
-// 자동 셔플 / ITEM_TYPE_SHUFFLE / 셔플 특수타일 등 모든 케이스 통합 - reason 으로 소스 구분.
+// 자동 셔플 / 셔플 특수타일 (+ 셔플 아이템 예정) 등 모든 케이스 통합 - reason 으로 소스 구분.
 // 새 케이스 추가 시 ShuffleReason enum 만 확장 (message 스키마 stable).
 message BoardShuffled {
   repeated BlockMove moves = 1;
@@ -213,7 +210,7 @@ message BoardShuffled {
 }
 
 // 컨베이어 벨트 1칸 회전 브로드캐스트. 턴 전환마다 1회 (BlockMatched / TurnTimeout 연출 뒤, BoardShuffled · NextTurn 앞).
-// moves 대로 칸 내용물 이동: 칸 내용물 = 블록 + 점령 (팀 / fortified / trap_captured) + 보드 오브젝트. 벨트 전 칸 (빈 칸 포함) from → to.
+// moves 대로 칸 내용물 이동: 칸 내용물 = 블록 + 점령 (팀 / fortified) + 보드 오브젝트. 벨트 전 칸 (빈 칸 포함) from → to.
 // BoardState.conveyor_cells 는 벨트 / 포털 표시용. 이동 계산은 moves 만 사용.
 message ConveyorShifted {
   repeated BlockMove moves = 1;  // 벨트 칸 이동 (from → to). BoardShuffled.moves 와 달리 점령 상태 + 보드 오브젝트도 함께 이동
@@ -223,19 +220,24 @@ message ConveyorShifted {
 // 보드 전체 상태 동기화 응답.
 // turn_end_at_unix_ms: 현재 턴 종료 절대시각 (서버 unix ms).
 // 클라는 매 프레임 (deadline - now + drift) 로 잔여시간 계산.
+//   - 0 = 턴 전환 중 (매칭 · 타임아웃 연출 ~ 다음 NextTurn). 카운트다운 정지 후 NextTurn 에서 갱신.
+//   - 턴 유지 연출 (아이템 사용 · 특수 턴 개시) 중에는 현재 턴 마감 그대로.
 message BoardSyncResponse {
   BoardState board_state = 1;
   string current_player_id = 2;     // 현재 턴 플레이어
   int64 turn_end_at_unix_ms = 3;    // 현재 턴 종료 절대시각 (서버 unix ms)
 }
 
-// 아이템 사용 결과 브로드캐스트.
-// hint_blocks 는 ITEM_TYPE_FIND 사용자 본인에게만 전송됨.
+// 아이템 사용 결과. 방 전원 수신 (받는 팀별로 내용 다름). 아이템 종류 = item_id → 카탈로그 ItemType, 결과 payload = result oneof case.
+// 숨김 정보 (함정 위치) 는 사용자 팀에게만 세팅, 상대 팀 수신분은 result unset → 사용 사실만 연출.
+// 턴은 유지 (NextTurn 없음). effects delay 동안 입력 잠금, 턴 시간은 계속 흐름.
 message ItemUsed {
-  string player_id = 1;
-  onet.common.v1.ItemType item_type = 2;
-  repeated BlockPos hint_blocks = 3;  // ITEM_TYPE_FIND: [pos1, pos2] 힌트 쌍
-  repeated Effect effects = 4;        // 이 이벤트에서 재생할 연출 시퀀스
+  string player_id = 1;         // 사용한 플레이어
+  int32 item_id = 2;
+  repeated Effect effects = 3;  // 연출 시퀀스 (TRAP_SET 등)
+  oneof result {
+    BlockPos trap_pos = 4;      // 함정 설치 칸. 함정은 블록과 함께 이동 (셔플 / 벨트), 매칭되면 발동 (BlockMatched TRAP_SPRUNG + trigger ITEM)
+  }
 }
 
 // 게임 최종 결과. 모든 블록 제거 또는 조기 종료 시 전송.
@@ -283,6 +285,13 @@ message PlayerInfo {
   int32 level = 3;
   string team_id = 4;  // 서버가 부여한 팀 식별자. 같은 team_id = 같은 팀.
   bool is_bot = 5;     // 봇 플레이어 여부
+  repeated ItemSlot items = 6;  // 입장 아이템 슬롯 (입장 순서, 최대 3, 전원 공개). 사용 갱신 = ItemUsed, 재접속 시 현재값
+}
+
+// 입장 아이템 슬롯 1칸. 아이템은 판당 1회 → used 면 소진
+message ItemSlot {
+  int32 item_id = 1;  // 카탈로그 아이템 id
+  bool used = 2;
 }
 
 // 보드 전체 상태 스냅샷.
@@ -298,6 +307,16 @@ message BoardState {
   int64 seed = 7;    // 셔플 동기화용 랜덤 시드
   repeated BlockPos conveyor_cells = 8;  // 컨베이어 벨트 칸 (회전 방향 순서, 마지막 → 첫 칸 순환). 빈 리스트 = 벨트 없음
   repeated BoardObjectData board_objects = 9;  // 보드 오브젝트 (칸 위 물체, 블록 없는 칸에만 존재)
+  repeated ActiveItem active_items = 10;       // 판 위에 지속 중인 아이템 효과. 서버가 수신자 팀 기준으로 필터 (상대 팀이 설치한 함정 제외)
+}
+
+// 지속 중인 아이템 효과 1개 (스냅샷). 종류 = oneof case, 진행 중 변화는 ItemUsed / 이동 (BoardShuffled · ConveyorShifted moves) / 발동 (BlockMatched) 로 추적
+message ActiveItem {
+  int32 item_id = 1;          // 사용한 아이템 (카탈로그 id)
+  string player_id = 2;       // 사용한 플레이어 (RoomJoined.players 의 team_id 로 본인 / 팀원 구분)
+  oneof state {
+    BlockPos trap_pos = 3;    // 설치된 함정 칸 (블록과 함께 이동, 매칭되면 사라짐)
+  }
 }
 
 // 보드 오브젝트 스냅샷 1개. 종류 = oneof case. 보드 오브젝트는 셔플 (BoardShuffled) 대상 아님, 벨트 회전 (ConveyorShifted.moves) 은 칸 내용물로 함께 이동.
@@ -327,7 +346,6 @@ message SlotData {
   string occupied_player_id = 2;
   string occupied_team_id = 3;
   bool fortified = 4;      // 성벽 특수블록으로 방어된 슬롯. 상대 매칭 경로 / 도둑 강탈로 소유권 안 바뀜
-  bool trap_captured = 5;  // 함정 특수타일 매칭으로 획득한 슬롯 - 클라 시각 강조용 (표시 여부는 클라 판단)
 }
 
 // 소유권이 바뀐 슬롯 1칸 (BlockMatched.occupied, ThiefAbility.stolen_slots, BombAbility.bombed_slots 공용).
