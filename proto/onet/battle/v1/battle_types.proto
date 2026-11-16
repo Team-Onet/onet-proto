@@ -36,23 +36,24 @@ enum GameCancelReason {
 message Effect {
   EffectType type = 1;
   int64 delay_ms = 2;
-  // 발동 주체. 특수블록 · 보너스 박스 연출 (BOMB, BONUS_BOX_BROKEN 등) = 세팅.
-  // 메시지당 1회 · 칸 주체 없는 연출 (BLOCK_MATCHED, FEVER 등) = unset
+  // 발동원. 능력 · 발동원 연출 (BONUS, BOMB, BONUS_BOX_BROKEN, TRAP_SET, JOKER_ACTIVATED 등) = 세팅 → 같은 trigger 의 AbilityResult 가 payload.
+  // 발동원 없는 연출 (BLOCK_MATCHED, FEVER, BOARD_SHUFFLED 등) = unset
   EffectTrigger trigger = 3;
 }
 
-// 연출 발동 주체. 한 메시지에 같은 type 이 여러 번 올 때 (특수블록 + 박스 보상) 식별 키 + 연출 원점
+// 발동원 = 능력 · 연출을 일으킨 콘텐츠 + 칸. 연출 (Effect.trigger) ↔ 결과 (AbilityResult.trigger) 매칭 키 + 연출 원점
 message EffectTrigger {
   EffectTriggerType type = 1;
-  BlockPos pos = 2;  // 주체 칸 = 연출 원점
+  BlockPos pos = 2;  // 발동원 칸 = 연출 원점. 칸 없는 발동원 (아이템 사용 · 캐치업) = unset
 }
 
-// 연출을 발동시킨 컨텐츠. 새 주체는 값 추가 (주체 데이터가 pos 로 부족하면 EffectTrigger 필드 확장 검토)
+// 발동원 종류. 새 발동원은 값 추가 (데이터가 pos 로 부족하면 EffectTrigger 필드 확장 검토)
 enum EffectTriggerType {
   EFFECT_TRIGGER_TYPE_UNSPECIFIED = 0;
-  EFFECT_TRIGGER_TYPE_SPECIAL_BLOCK = 1;  // 매칭한 특수블록 칸 → payload = BlockMatched.ability
-  EFFECT_TRIGGER_TYPE_BONUS_BOX = 2;      // 보너스 박스 칸 → payload = 같은 pos 의 BlockMatched.board_object_passes[].bonus_box.special_ability
-  EFFECT_TRIGGER_TYPE_ITEM = 3;           // 아이템 설치물 칸 (설치 함정 발동 = TRAP_SPRUNG). 매칭 블록 둘 다 함정이면 칸별 1개
+  EFFECT_TRIGGER_TYPE_SPECIAL_BLOCK = 1;  // 매칭한 특수블록 (pos = 블록 칸) → BlockMatched.abilities
+  EFFECT_TRIGGER_TYPE_BONUS_BOX = 2;      // 보너스 상자 파괴 보상 (pos = 상자 칸) → BlockMatched.abilities. BONUS_BOX_BROKEN 도 같은 trigger
+  EFFECT_TRIGGER_TYPE_ITEM = 3;           // 아이템. 사용 (pos 없음) → ItemUsed.ability / 설치 함정 발동 TRAP_SPRUNG (pos = 함정 칸, 매칭 블록 둘 다 함정이면 칸별 1개)
+  EFFECT_TRIGGER_TYPE_CATCH_UP = 4;       // 캐치업 밸런스 지급 (pos 없음) → NextTurn.turn_abilities, 개시 연출 JOKER_ACTIVATED
 }
 
 message BlockPos {
@@ -61,55 +62,34 @@ message BlockPos {
 }
 
 // 클라 연출 재생 트리거. 매칭/셔플/턴 등 각 이벤트 message 안 repeated Effect 필드에 담겨 전달.
-// 블록 정체성 (BlockType) 과 무관.
+// 능력 연출 이름 = 능력 이름 (AbilityType).
 enum EffectType {
   EFFECT_TYPE_UNSPECIFIED = 0;
   EFFECT_TYPE_BLOCK_MATCHED = 1;     // 매칭 성공 점령 연출
   EFFECT_TYPE_FEVER = 2;             // 피버 진입 (남은 블록 50% 이하 최초 도달 시 1회)
   EFFECT_TYPE_BOARD_SHUFFLED = 3;    // 셔플 연출 (BoardShuffled.effects, reason 무관)
-  EFFECT_TYPE_SCORE_BONUS = 4;       // 보너스 특수 블록 매칭 시 +N 팝업 연출
+  EFFECT_TYPE_BONUS = 4;             // 보너스 능력 +N 팝업 연출
   EFFECT_TYPE_TRAP_SPRUNG = 5;       // 설치 함정 (아이템) 블록 매칭 → 반대편 팀 소유로 반전 연출 (trigger ITEM)
-  EFFECT_TYPE_FORTIFY = 6;           // 성벽 특수 블록 매칭 → 획득 슬롯 fortified 형성 연출
-  EFFECT_TYPE_STEAL = 7;             // 도둑 특수 블록 매칭 → 상대 슬롯 강탈 연출
-  EFFECT_TYPE_JOKER_ACTIVATED = 8;   // 조커 특수 턴 개시 연출 (NextTurn.effects)
+  EFFECT_TYPE_FORTIFY = 6;           // 성벽 능력 → 이번 매칭 점령 슬롯 fortified 형성 연출
+  EFFECT_TYPE_THIEF = 7;             // 도둑 능력 → 슬롯 강탈 / 점령 연출
+  EFFECT_TYPE_JOKER_ACTIVATED = 8;   // 조커 턴 개시 연출 (NextTurn.effects)
   EFFECT_TYPE_JOKER_MATCHED = 9;     // 조커 교차 매칭 → 짝 보정 블록 제거 연출 (BlockMatched.effects)
-  EFFECT_TYPE_BOMB = 10;             // 폭탄 특수블록 → 추가 블록 쌍 폭파 + 점령 연출 (BlockMatched.effects, bombed_slots 비면 생략)
+  EFFECT_TYPE_BOMB = 10;             // 폭탄 능력 → 추가 블록 쌍 폭파 + 점령 연출 (BlockMatched.effects, bomb.slots 비면 생략)
   EFFECT_TYPE_CONVEYOR_SHIFTED = 11; // 컨베이어 벨트 1칸 회전 연출 (ConveyorShifted.effects)
   EFFECT_TYPE_BONUS_BOX_BROKEN = 12; // 보너스 박스 파괴 연출 (BlockMatched.effects, 박스 종류 공통). 보상 연출은 뒤이어 별도 effect
   EFFECT_TYPE_TRAP_SET = 13;         // 함정 아이템 설치 연출 (ItemUsed.effects). 상대 팀은 위치 없이 사용 사실만 연출
   // 향후: MILESTONE, STREAK 등
 }
 
-// 블록 정체성 (BlockData.block_type, SpecialBlockSummary.block_type).
-// NORMAL = 일반 블록. 나머지 = 특수 블록. 새 특수 블록 추가 시 이 enum 확장.
-enum BlockType {
-  UNSPECIFIED = 0;  // BlockData 에서는 HIDDEN 특수블록 마스킹 (일반 블록처럼 표시)
-  NORMAL   = 1;  // 일반 블록
-  BONUS    = 2;  // 보너스 특수 블록 (매칭 시 +N 점수)
-  SHUFFLE  = 3;  // 셔플 특수 블록 (매칭 시 남은 블록 재배치)
-  FORTIFY  = 4;  // 성벽 특수 블록 (매칭 시 슬롯 fortified 마킹)
-  THIEF    = 5;  // 도둑 특수 블록 (매칭 시 상대팀 점유 슬롯 랜덤 min~max값 개 강탈, 성벽 slot skip)
-  BOMB     = 6;  // 폭탄 특수 블록 (매칭 시 랜덤 min~max값 블록 쌍 추가 제거 + 그 칸 점령)
-  // 향후: WALL 등
-}
-
-// 특수 턴 어빌리티. NextTurn.special_turn_abilities 에 실려 해당 턴 한정 규칙 변경을 알린다. 복수 동시 적용 가능.
-enum SpecialTurnAbilityType {
-  SPECIAL_TURN_ABILITY_TYPE_UNSPECIFIED = 0;
-  SPECIAL_TURN_ABILITY_TYPE_JOKER = 1;  // 이번 턴 모든 블록 상호 매칭 가능. 첫 매칭 성공 시 해제
-}
-
-// 셔플 트리거 유형. `BoardShuffled.reason` 에 실려 클라가 셔플 원인을 인지한다.
-// 셔플 발생 소스가 늘어나도 이 enum 만 확장 (BoardShuffled 자체는 stable).
+// 셔플 원인. `BoardShuffled.reason`. 능력 셔플은 발동원 무관 ABILITY 1개 (발동원 = AbilityResult.trigger)
 enum ShuffleReason {
   SHUFFLE_REASON_UNSPECIFIED = 0;
-  SHUFFLE_REASON_NO_MOVES = 1;       // 매칭 가능 pair 없음 → 서버 자동 셔플
-  SHUFFLE_REASON_ITEM = 2;           // 셔플 아이템 사용 (셔플 아이템 도입 시, 현재 미발생)
-  SHUFFLE_REASON_SPECIAL_TILE = 3;   // 셔플 특수타일 매칭 발동
+  SHUFFLE_REASON_NO_MOVES = 1;       // 매칭 가능 pair 없음 (교착 · 2연속 타임아웃) → 서버 자동 셔플
+  SHUFFLE_REASON_ABILITY = 2;        // 셔플 능력 발동. 발동원 = 직전 메시지 AbilityResult.shuffle 의 trigger
 }
 
 // 보너스 박스 종류 (BonusBoxState.type). 동작 (경로 통과마다 HP -1, 0 이면 파괴 + 막타 점령자 보상) 은 공통, 종류별로 보상 / 외형만 다름
 enum BonusBoxType {
   BONUS_BOX_TYPE_UNSPECIFIED = 0;
-  BONUS_BOX_TYPE_NORMAL = 1;  // 일반 박스. 보상 = 특수블록 어빌리티 1개 랜덤 (BonusBoxHit.special_ability)
+  BONUS_BOX_TYPE_NORMAL = 1;  // 일반 박스. 보상 = 블록 능력 1개 랜덤 (SHUFFLE 제외, BlockMatched.abilities trigger BONUS_BOX)
 }

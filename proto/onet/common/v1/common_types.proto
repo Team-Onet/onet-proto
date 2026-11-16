@@ -16,10 +16,17 @@ enum MatchMode {
   MATCH_MODE_TEAM_BOT = 40;  // 2v2 봇전
 }
 
-// 아이템 종류 = 발동 규칙. 같은 종류의 수치 변형은 item_id 로 구분 (카탈로그: item_id → type · activation · 수치)
-enum ItemType {
-  ITEM_TYPE_UNSPECIFIED = 0;
-  ITEM_TYPE_TRAP = 1;  // 함정 설치: 고른 블록이 매칭되면 (누가 매칭하든) 점령이 매칭한 팀의 상대 팀으로
+// 능력 = 보드 효과 1개. 발동원 (특수블록 · 보너스 상자 · 아이템 · 캐치업) 무관 공용.
+// 아이템 스펙 = item_id → ability (같은 능력의 수치 변형은 item_id 로 구분) · activation
+enum AbilityType {
+  ABILITY_TYPE_UNSPECIFIED = 0;  // 능력 없음 (BlockData: 일반 블록 · 숨김 특수블록 공용)
+  ABILITY_TYPE_BONUS = 1;        // 보너스 점수
+  ABILITY_TYPE_SHUFFLE = 2;      // 남은 블록 재배치
+  ABILITY_TYPE_FORTIFY = 3;      // 이번 매칭 점령 칸 성벽 (상대 경로 · 도둑으로 소유 안 바뀜)
+  ABILITY_TYPE_THIEF = 4;        // 상대 점령 칸 강탈 (없으면 블록 없는 빈 칸 점령)
+  ABILITY_TYPE_BOMB = 5;         // 블록 쌍 추가 제거 + 그 칸 점령
+  ABILITY_TYPE_TRAP = 6;         // 함정 설치: 고른 블록이 매칭되면 (누가 매칭하든) 소유가 매칭한 팀의 상대 팀으로
+  ABILITY_TYPE_JOKER = 7;        // 턴 규칙: 이번 턴 모든 블록 상호 매칭 (첫 매칭 시 해제)
 }
 
 // 아이템 사용 방식 = UseItemRequest.targets 개수 규칙

@@ -7,7 +7,7 @@ option java_multiple_files = true;
 option java_outer_classname = "BattleCheatProto";
 option java_package = "com.onet.battle.v1";
 
-import "onet/battle/v1/battle_types.proto";
+import "onet/common/v1/common_types.proto";
 
 // ============================================================
 // 테스트용 치트 (서버 LOCAL / DEV 에서만 적용, PROD 는 무시)
@@ -16,8 +16,8 @@ import "onet/battle/v1/battle_types.proto";
 // ============================================================
 
 message CheatOptions {
-  // 강제 배치할 특수블록 종류 (종류당 개수는 모드 정책). 비어있으면 모드 정책 그대로. NORMAL / UNSPECIFIED 불가
-  repeated BlockType special_blocks = 1;
+  // 강제 배치할 특수블록 능력 (BONUS / SHUFFLE / FORTIFY / THIEF / BOMB, 종류당 1개, 최대 3종 · 초과 시 랜덤 3종). 비어있으면 모드 정책 그대로. 그 외 능력 = INVALID_PARAM
+  repeated onet.common.v1.AbilityType special_blocks = 1;
   // 컨베이어 벨트 강제
   ConveyorCheat conveyor = 2;
   // 보드 오브젝트 (보너스 박스) 강제. 미지정 = 모드 정책, true / false = 켬 / 끔 (개수 · 수치는 모드 정책)
