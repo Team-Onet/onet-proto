@@ -32,7 +32,8 @@ message SelectBlockRequest {
 }
 
 // 아이템 사용 (대상 지정까지 한 번에 요청). 자기 턴 + 연출 입력 잠금 아닐 때만. 아이템별 판당 1회, 턴당 1개.
-// 사용해도 턴 유지 → 남은 턴 시간 동안 매칭 가능 (매칭 시 턴 종료). 턴이 끝난 뒤 도착한 요청은 거절 (= 사용 취소, 소모 X).
+// 사용해도 턴 유지 → 남은 턴 시간 동안 매칭 가능 (매칭 시 턴 종료). 단 매칭형 아이템 (SNAKE) = 이어지는 BlockMatched 로 턴 종료.
+// 턴이 끝난 뒤 도착한 요청은 거절 (= 사용 취소, 소모 X).
 // 성공 = ItemUsed (방 전원). 거절 = StreamError (NOT_YOUR_TURN / ITEM_UNAVAILABLE / INVALID_BLOCK_POS), 상태 변경 없음.
 message UseItemRequest {
   int32 item_id = 1;              // 카탈로그 아이템 id. 보유 / 사용 여부 = PlayerInfo.items
@@ -104,7 +105,7 @@ message BlockSelected {
 // 설치 함정 (아이템) 매칭이면 소유 = 매칭한 팀의 상대 팀. 뒤집기는 매칭당 최대 1회 (함정 여러 개 동시 = 1회).
 message BlockMatched {
   string player_id = 1;                             // 매칭한 플레이어 (입력 주체). 템포 · 매칭 스탯 · 선택 연출 기준
-  repeated BlockPos path = 2;                       // 경로상 모든 좌표. [0] = 시작 블록 칸, [last] = 끝 블록 칸
+  repeated BlockPos path = 2;                       // 경로상 모든 좌표. [0] = 시작 블록 칸, [last] = 끝 블록 칸. SNAKE 아이템 = 꺾기 무제한 경로
   repeated OccupiedSlot occupied = 3;               // 매칭 경로로 점유된 슬롯 (시작 · 끝 칸 포함, 소유 = owner_team_id). 능력 추가 점령분은 abilities 쪽
   int32 match_score = 4;                            // 경로 점수 (미점유 1 / 상대 점령 2 / 자기 점령 0 합산). 연출 참고용, 최종 점수와 무관
   int32 remaining_block_count = 5;                  // 매칭 후 남은 블록 수 (조커 보정 / 폭탄 추가 제거 반영)
@@ -207,13 +208,14 @@ message BoardSyncResponse {
 }
 
 // 아이템 사용 결과. 방 전원 수신 (받는 팀별로 내용 다름). 아이템 능력 = item_id → 아이템 스펙 ability.
-// 결과 (ability) 는 사용자 팀에게만 세팅 (함정 위치 등 숨김 정보), 상대 팀 수신분은 unset → effects 로 사용 사실만 연출.
-// 턴은 유지 (NextTurn 없음). effects delay 동안 입력 잠금, 턴 시간은 계속 흐름.
+// 결과 (ability) = 이 메시지가 운반하는 능력 결과. 숨김 결과 (함정 위치) 는 사용자 팀에게만, 상대 팀 수신분은 unset.
+// 다른 메시지가 결과를 운반하는 아이템 = unset: 셔플 → [BlockSelected 해제] → BoardShuffled(ABILITY), SNAKE → [BlockSelected 해제] → BlockMatched.
+// 턴은 유지 (NextTurn 없음, SNAKE 는 BlockMatched 로 턴 종료). effects delay 동안 입력 잠금, 턴 시간은 계속 흐름.
 message ItemUsed {
   string player_id = 1;         // 사용한 플레이어
   int32 item_id = 2;
   repeated Effect effects = 3;  // 연출 시퀀스 (TRAP_SET 등, trigger ITEM)
-  AbilityResult ability = 4;    // 능력 결과 (trigger ITEM, pos 없음). 사용자 팀만
+  AbilityResult ability = 4;    // 능력 결과 (trigger ITEM, pos 없음, 현재 = trap 사용자 팀만). 셔플 · SNAKE = unset
 }
 
 // 게임 최종 결과. 모든 블록 제거 또는 조기 종료 시 전송.

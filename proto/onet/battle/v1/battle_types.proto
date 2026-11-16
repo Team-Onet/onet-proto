@@ -37,7 +37,7 @@ message Effect {
   EffectType type = 1;
   int64 delay_ms = 2;
   // 발동원. 능력 · 발동원 연출 (BONUS, BOMB, BONUS_BOX_BROKEN, TRAP_SET, JOKER_ACTIVATED 등) = 세팅 → 같은 trigger 의 AbilityResult 가 payload.
-  // 발동원 없는 연출 (BLOCK_MATCHED, FEVER, BOARD_SHUFFLED 등) = unset
+  // 발동원 없는 연출 (BLOCK_MATCHED, FEVER, BOARD_SHUFFLED 등) = unset. 예외: SNAKE 아이템 매칭의 BLOCK_MATCHED = ITEM (pos 없음)
   EffectTrigger trigger = 3;
 }
 
@@ -52,7 +52,7 @@ enum EffectTriggerType {
   EFFECT_TRIGGER_TYPE_UNSPECIFIED = 0;
   EFFECT_TRIGGER_TYPE_SPECIAL_BLOCK = 1;  // 매칭한 특수블록 (pos = 블록 칸) → BlockMatched.abilities
   EFFECT_TRIGGER_TYPE_BONUS_BOX = 2;      // 보너스 상자 파괴 보상 (pos = 상자 칸) → BlockMatched.abilities. BONUS_BOX_BROKEN 도 같은 trigger
-  EFFECT_TRIGGER_TYPE_ITEM = 3;           // 아이템. 사용 (pos 없음) → ItemUsed.ability / 설치 함정 발동 TRAP_SPRUNG (pos = 함정 칸, 매칭 블록 둘 다 함정이면 칸별 1개)
+  EFFECT_TRIGGER_TYPE_ITEM = 3;           // 아이템. 사용 (pos 없음) → ItemUsed.ability / SNAKE 매칭 BLOCK_MATCHED (pos 없음) / 설치 함정 발동 TRAP_SPRUNG (pos = 함정 칸, 매칭 블록 둘 다 함정이면 칸별 1개)
   EFFECT_TRIGGER_TYPE_CATCH_UP = 4;       // 캐치업 밸런스 지급 (pos 없음) → NextTurn.turn_abilities, 개시 연출 JOKER_ACTIVATED
 }
 

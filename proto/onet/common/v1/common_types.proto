@@ -17,7 +17,7 @@ enum MatchMode {
 }
 
 // 능력 = 보드 효과 1개. 발동원 (특수블록 · 보너스 상자 · 아이템 · 캐치업) 무관 공용.
-// 아이템 스펙 = item_id → ability (같은 능력의 수치 변형은 item_id 로 구분) · activation
+// 아이템 스펙 = item_id → ability (같은 능력의 수치 변형은 item_id 로 구분). activation = 능력별 고정 (스펙 · DB 값 아님)
 enum AbilityType {
   ABILITY_TYPE_UNSPECIFIED = 0;  // 능력 없음 (BlockData: 일반 블록 · 숨김 특수블록 공용)
   ABILITY_TYPE_BONUS = 1;        // 보너스 점수
@@ -27,6 +27,7 @@ enum AbilityType {
   ABILITY_TYPE_BOMB = 5;         // 블록 쌍 추가 제거 + 그 칸 점령
   ABILITY_TYPE_TRAP = 6;         // 함정 설치: 고른 블록이 매칭되면 (누가 매칭하든) 소유가 매칭한 팀의 상대 팀으로
   ABILITY_TYPE_JOKER = 7;        // 턴 규칙: 이번 턴 모든 블록 상호 매칭 (첫 매칭 시 해제)
+  ABILITY_TYPE_SNAKE = 8;        // 고른 짝 블록을 꺾기 제한 없이 연결 (블록에 막히지 않으면) → 일반 매칭 처리. 경로 = 최단 → 점수 최대 → 랜덤
 }
 
 // 아이템 사용 방식 = UseItemRequest.targets 개수 규칙
