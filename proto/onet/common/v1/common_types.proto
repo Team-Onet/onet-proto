@@ -30,6 +30,7 @@ enum AbilityType {
   ABILITY_TYPE_SNAKE = 8;        // 고른 짝 블록을 꺾기 제한 없이 연결 (블록에 막히지 않으면) → 일반 매칭 처리. 경로 = 최단 → 점수 최대 → 랜덤
   ABILITY_TYPE_ERASER = 9;       // 고른 짝 블록 제거 (점령 · 매칭 X). 블록에 붙은 능력 · 설치 아이템도 함께 제거 (미발동)
   ABILITY_TYPE_HOOK = 10;        // 상대 점령 칸 N곳 강탈 (성벽 포함 · 성벽 우선, 성벽 유지). 상대 점령 N곳 미만 = 사용 불가
+  ABILITY_TYPE_HINT = 11;        // N턴 (내 턴 기준) 동안 경로가 가장 긴 매칭 쌍을 사용자에게 안내 (Hint). 매칭은 사용자가 직접
 }
 
 // 아이템 사용 방식 = UseItemRequest.targets 개수 규칙

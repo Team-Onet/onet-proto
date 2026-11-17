@@ -236,13 +236,21 @@ message BoardSyncResponse {
 
 // 아이템 사용 결과. 방 전원 수신 (받는 팀별로 내용 다름). 아이템 능력 = item_id → 아이템 스펙 ability.
 // 결과 (ability) = 이 메시지가 운반하는 능력 결과. 숨김 결과 (함정 위치) 는 사용자 팀에게만 (상대 팀 수신분 unset), 공개 결과 (지우개 · 후크의 갈고리) 는 전원.
-// 다른 메시지가 결과를 운반하는 아이템 = unset: 셔플 → [BlockSelected 해제] → BoardShuffled(ABILITY), SNAKE → [BlockSelected 해제] → BlockMatched.
+// 다른 메시지가 결과를 운반하는 아이템 = unset: 셔플 → [BlockSelected 해제] → BoardShuffled(ABILITY), SNAKE → [BlockSelected 해제] → BlockMatched, 힌트 → Hint (사용자만).
 // 턴은 유지 (NextTurn 없음, SNAKE 는 BlockMatched 로 턴 종료). effects delay 동안 입력 잠금, 턴 시간은 계속 흐름.
 message ItemUsed {
   string player_id = 1;         // 사용한 플레이어
   int32 item_id = 2;
   repeated Effect effects = 3;  // 연출 시퀀스 (TRAP_SET 등, trigger ITEM)
-  AbilityResult ability = 4;    // 능력 결과 (trigger ITEM, pos 없음). trap = 사용자 팀만, eraser · hook = 전원. 셔플 · SNAKE = unset
+  AbilityResult ability = 4;    // 능력 결과 (trigger ITEM, pos 없음). trap = 사용자 팀만, eraser · hook = 전원. 셔플 · SNAKE · 힌트 = unset
+}
+
+// 힌트 안내 (힌트 능력 사용자 본인만 수신). 지금 매칭하면 경로가 가장 긴 쌍 (길이 → 점수 → 좌표 순). 안내만, 매칭은 사용자가 직접.
+// 송신 = 사용 즉시 · 남은 턴의 내 턴 시작 (NextTurn 직후) · 턴 유지 중 보드 변경 (셔플 · 지우개 · 후크 등) · 재접속.
+// 안내대로 매칭하지 않아도 턴은 소모. 경로는 안내 X (동일 길이 · 점수 경로가 여럿이면 실제 매칭 경로는 랜덤)
+message Hint {
+  repeated BlockPos blocks = 1;  // 매칭할 두 블록. 빈 = 매칭 가능 쌍 없음
+  int32 turns_left = 2;          // 이번 턴 포함 남은 안내 턴 (2 → 1)
 }
 
 // 게임 최종 결과. 모든 블록 제거 또는 조기 종료 시 전송.
