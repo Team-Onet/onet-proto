@@ -79,6 +79,7 @@ enum EffectType {
   EFFECT_TYPE_BONUS_BOX_BROKEN = 12; // 보너스 박스 파괴 연출 (BlockMatched.effects, 박스 종류 공통). 보상 연출은 뒤이어 별도 effect
   EFFECT_TYPE_TRAP_SET = 13;         // 함정 아이템 설치 연출 (ItemUsed.effects). 상대 팀은 위치 없이 사용 사실만 연출
   EFFECT_TYPE_ERASER = 14;           // 지우개 블록 제거 연출 (ItemUsed.effects, trigger ITEM). 대상 = ItemUsed.ability.eraser
+  EFFECT_TYPE_HOOK = 15;             // 후크의 갈고리 강탈 연출 (ItemUsed.effects, trigger ITEM). 대상 = ItemUsed.ability.hook
   // 향후: MILESTONE, STREAK 등
 }
 

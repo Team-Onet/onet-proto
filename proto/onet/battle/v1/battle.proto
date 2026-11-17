@@ -138,6 +138,7 @@ message AbilityResult {
     BombResult bomb = 6;        // 폭탄. 연출 BOMB (slots 비면 없음)
     BlockPos trap = 7;          // 함정 설치 칸 (ItemUsed, 사용자 팀만). 연출 TRAP_SET. 함정은 블록과 함께 이동 (셔플 / 벨트), 매칭되면 발동 (BlockMatched TRAP_SPRUNG)
     EraserResult eraser = 8;    // 지우개 제거 결과 (ItemUsed, 전원). 연출 ERASER
+    HookResult hook = 9;        // 후크의 갈고리 강탈 결과 (ItemUsed, 전원). 연출 HOOK
   }
 }
 
@@ -145,7 +146,7 @@ message AbilityResult {
 message ShuffleResult {
 }
 
-// 성벽 능력 발동. BlockMatched.occupied 슬롯이 fortified 가 됨 → 이후 상대 매칭 경로 / 도둑 강탈로 소유권 이전 안 됨.
+// 성벽 능력 발동. BlockMatched.occupied 슬롯이 fortified 가 됨 → 이후 상대 매칭 경로 / 도둑 강탈로 소유권 이전 안 됨 (후크의 갈고리만 강탈, 성벽 유지).
 // 재접속 / 동기화 시 상태는 SlotData.fortified 로 복원.
 message FortifyResult {
 }
@@ -180,6 +181,17 @@ message ErasedBlock {
   BlockPos pos = 1;
   onet.common.v1.AbilityType ability = 2;  // 지워진 특수블록 능력 (숨김 특수블록 포함 공개). 0 = 일반 블록
   repeated string trap_team_ids = 3;       // 지워진 설치 함정의 설치 팀 (팀당 최대 1개, 상대 함정 포함 공개). 빈 = 함정 없음
+}
+
+// 후크의 갈고리 능력 발동. 상대 점령 칸 → 사용자 팀 소유. 성벽 칸 우선, 성벽 상태 유지 (= 이제 사용자 팀 성벽)
+message HookResult {
+  repeated HookedSlot slots = 1;  // 강탈한 칸 (개수 = 강탈 칸 수)
+}
+
+// 후크로 강탈한 칸 1개
+message HookedSlot {
+  BlockPos pos = 1;
+  bool fortified = 2;  // 성벽 칸 (강탈 후에도 성벽 유지 = 사용자 팀 성벽)
 }
 
 // 매칭 실패 브로드캐스트 (경로 없음 or 타입 불일치).
@@ -223,14 +235,14 @@ message BoardSyncResponse {
 }
 
 // 아이템 사용 결과. 방 전원 수신 (받는 팀별로 내용 다름). 아이템 능력 = item_id → 아이템 스펙 ability.
-// 결과 (ability) = 이 메시지가 운반하는 능력 결과. 숨김 결과 (함정 위치) 는 사용자 팀에게만 (상대 팀 수신분 unset), 공개 결과 (지우개) 는 전원.
+// 결과 (ability) = 이 메시지가 운반하는 능력 결과. 숨김 결과 (함정 위치) 는 사용자 팀에게만 (상대 팀 수신분 unset), 공개 결과 (지우개 · 후크의 갈고리) 는 전원.
 // 다른 메시지가 결과를 운반하는 아이템 = unset: 셔플 → [BlockSelected 해제] → BoardShuffled(ABILITY), SNAKE → [BlockSelected 해제] → BlockMatched.
 // 턴은 유지 (NextTurn 없음, SNAKE 는 BlockMatched 로 턴 종료). effects delay 동안 입력 잠금, 턴 시간은 계속 흐름.
 message ItemUsed {
   string player_id = 1;         // 사용한 플레이어
   int32 item_id = 2;
   repeated Effect effects = 3;  // 연출 시퀀스 (TRAP_SET 등, trigger ITEM)
-  AbilityResult ability = 4;    // 능력 결과 (trigger ITEM, pos 없음). trap = 사용자 팀만, eraser = 전원. 셔플 · SNAKE = unset
+  AbilityResult ability = 4;    // 능력 결과 (trigger ITEM, pos 없음). trap = 사용자 팀만, eraser · hook = 전원. 셔플 · SNAKE = unset
 }
 
 // 게임 최종 결과. 모든 블록 제거 또는 조기 종료 시 전송.
@@ -337,7 +349,7 @@ message BlockData {
 message SlotData {
   BlockPos pos = 1;
   string occupied_team_id = 2;
-  bool fortified = 3;      // 성벽 특수블록으로 방어된 슬롯. 상대 매칭 경로 / 도둑 강탈로 소유권 안 바뀜
+  bool fortified = 3;      // 성벽 특수블록으로 방어된 슬롯. 상대 매칭 경로 / 도둑 강탈로 소유권 안 바뀜 (후크의 갈고리 = 소유만 바뀌고 성벽 유지)
 }
 
 // 매칭 경로로 소유가 바뀐 슬롯 1칸 (BlockMatched.occupied). 소유 팀 = BlockMatched.owner_team_id.
