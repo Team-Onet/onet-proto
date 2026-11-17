@@ -65,5 +65,6 @@ message ServerMessage {
     GameCanceled game_canceled = 15;
     ConveyorShifted conveyor_shifted = 16;
     Hint hint = 17;
+    ItemExpired item_expired = 18;
   }
 }

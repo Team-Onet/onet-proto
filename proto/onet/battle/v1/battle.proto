@@ -139,6 +139,7 @@ message AbilityResult {
     BlockPos trap = 7;          // 함정 설치 칸 (ItemUsed, 사용자 팀만). 연출 TRAP_SET. 함정은 블록과 함께 이동 (셔플 / 벨트), 매칭되면 발동 (BlockMatched TRAP_SPRUNG)
     EraserResult eraser = 8;    // 지우개 제거 결과 (ItemUsed, 전원). 연출 ERASER
     HookResult hook = 9;        // 후크의 갈고리 강탈 결과 (ItemUsed, 전원). 연출 HOOK
+    InkResult ink = 10;         // 먹물 영역 (ItemUsed, 전원). 연출 INK. 해제 = ItemExpired
   }
 }
 
@@ -242,7 +243,7 @@ message ItemUsed {
   string player_id = 1;         // 사용한 플레이어
   int32 item_id = 2;
   repeated Effect effects = 3;  // 연출 시퀀스 (TRAP_SET 등, trigger ITEM)
-  AbilityResult ability = 4;    // 능력 결과 (trigger ITEM, pos 없음). trap = 사용자 팀만, eraser · hook = 전원. 셔플 · SNAKE · 힌트 = unset
+  AbilityResult ability = 4;    // 능력 결과 (trigger ITEM, pos 없음). trap = 사용자 팀만, eraser · hook · ink = 전원. 셔플 · SNAKE · 힌트 = unset
 }
 
 // 힌트 안내 (힌트 능력 사용자 본인만 수신). 지금 매칭하면 경로가 가장 긴 쌍 (길이 → 점수 → 좌표 순). 안내만, 매칭은 사용자가 직접.
@@ -251,6 +252,19 @@ message ItemUsed {
 message Hint {
   repeated BlockPos blocks = 1;  // 매칭할 두 블록. 빈 = 매칭 가능 쌍 없음
   int32 turns_left = 2;          // 이번 턴 포함 남은 안내 턴 (2 → 1)
+}
+
+// 먹물 영역 (ItemUsed.ability.ink / ActiveItem.ink). 피해 팀 = 사용자 팀이 아닌 팀: 영역 칸 블록 그림을 클라가 가림 (선택 · 매칭 정상).
+// 서버 규칙 변화 없음 (매칭 · 경로 · 셔플 · 벨트 그대로). 영역은 칸 고정 (블록이 셔플 · 벨트로 드나들어도 영역 그대로)
+message InkResult {
+  int32 size = 1;                 // 영역 한 변 칸 수 (전 영역 동일. 보드에 M곳이 안 들어가면 서버가 줄인 값)
+  repeated BlockPos origins = 2;  // 영역 좌상단. 영역 = origin ~ origin + size - 1 (x · y). 영역끼리 겹침 X
+}
+
+// 지속 아이템 효과 종료 (전원). 먹물 = 피해 팀 Z번째 턴 종료 시 NextTurn 직전. 판이 먼저 끝나면 미송신
+message ItemExpired {
+  string player_id = 1;   // 사용한 플레이어 (아이템 종류당 판 1회 → player_id + item_id 로 효과 1개 식별)
+  int32 item_id = 2;
 }
 
 // 게임 최종 결과. 모든 블록 제거 또는 조기 종료 시 전송.
@@ -320,15 +334,16 @@ message BoardState {
   int64 seed = 7;    // 셔플 동기화용 랜덤 시드
   repeated BlockPos conveyor_cells = 8;  // 컨베이어 벨트 칸 (회전 방향 순서, 마지막 → 첫 칸 순환). 빈 리스트 = 벨트 없음
   repeated BoardObjectData board_objects = 9;  // 보드 오브젝트 (칸 위 물체, 블록 없는 칸에만 존재)
-  repeated ActiveItem active_items = 10;       // 판 위에 지속 중인 아이템 효과. 서버가 수신자 팀 기준으로 필터 (상대 팀이 설치한 함정 제외)
+  repeated ActiveItem active_items = 10;       // 판 위에 지속 중인 아이템 효과. 함정 = 수신자 팀 설치분만 (서버 필터), 먹물 = 전원
 }
 
-// 지속 중인 아이템 효과 1개 (스냅샷). 종류 = oneof case, 진행 중 변화는 ItemUsed / 이동 (BoardShuffled · ConveyorShifted moves) / 발동 (BlockMatched) 로 추적
+// 지속 중인 아이템 효과 1개 (스냅샷). 종류 = oneof case, 진행 중 변화는 ItemUsed / 이동 (BoardShuffled · ConveyorShifted moves) / 발동 (BlockMatched) / 종료 (ItemExpired) 로 추적
 message ActiveItem {
   int32 item_id = 1;          // 사용한 아이템 (카탈로그 id)
   string player_id = 2;       // 사용한 플레이어 (RoomJoined.players 의 team_id 로 본인 / 팀원 구분)
   oneof state {
-    BlockPos trap_pos = 3;    // 설치된 함정 칸 (블록과 함께 이동, 매칭되면 사라짐)
+    BlockPos trap_pos = 3;    // 설치된 함정 칸 (블록과 함께 이동, 매칭되면 사라짐). 수신자 팀 설치분만
+    InkResult ink = 4;        // 먹물 영역 (칸 고정, 전원). 해제 = ItemExpired
   }
 }
 

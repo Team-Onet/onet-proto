@@ -80,6 +80,7 @@ enum EffectType {
   EFFECT_TYPE_TRAP_SET = 13;         // 함정 아이템 설치 연출 (ItemUsed.effects). 상대 팀은 위치 없이 사용 사실만 연출
   EFFECT_TYPE_ERASER = 14;           // 지우개 블록 제거 연출 (ItemUsed.effects, trigger ITEM). 대상 = ItemUsed.ability.eraser
   EFFECT_TYPE_HOOK = 15;             // 후크의 갈고리 강탈 연출 (ItemUsed.effects, trigger ITEM). 대상 = ItemUsed.ability.hook
+  EFFECT_TYPE_INK = 16;              // 먹물 뿌리기 연출 (ItemUsed.effects, trigger ITEM). 대상 = ItemUsed.ability.ink
   // 향후: MILESTONE, STREAK 등
 }
 
