@@ -17,7 +17,7 @@ import "onet/common/v1/error_code.proto";
 // ============================================================
 
 // 룸 입장. battle_token 은 MatchMaker 가 발급한 JWT.
-// 페이로드: roomId, playerId, nickname, level, mode, mapId, mapType, itemIds
+// 페이로드: roomId, playerId, nickname, mode, mapId, mapType, itemIds
 message JoinRoomRequest {
   string battle_token = 1;
   CheatOptions cheat = 2;   // 테스트용 치트 (LOCAL / DEV 서버만 적용). 미지정 = 치트 없음
@@ -309,10 +309,9 @@ message GameCanceled {
 message PlayerInfo {
   string player_id = 1;
   string nickname = 2;
-  int32 level = 3;
-  string team_id = 4;  // 서버가 부여한 팀 식별자. 같은 team_id = 같은 팀.
-  bool is_bot = 5;     // 봇 플레이어 여부
-  repeated ItemSlot items = 6;  // 입장 아이템 슬롯 (입장 순서, 최대 3, 전원 공개). 사용 갱신 = ItemUsed, 재접속 시 현재값
+  string team_id = 3;  // 서버가 부여한 팀 식별자. 같은 team_id = 같은 팀.
+  bool is_bot = 4;     // 봇 플레이어 여부
+  repeated ItemSlot items = 5;  // 입장 아이템 슬롯 (입장 순서, 최대 3, 전원 공개). 사용 갱신 = ItemUsed, 재접속 시 현재값
 }
 
 // 입장 아이템 슬롯 1칸. 아이템은 판당 1회 → used 면 소진

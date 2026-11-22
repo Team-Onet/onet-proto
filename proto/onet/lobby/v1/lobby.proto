@@ -2,6 +2,9 @@ syntax = "proto3";
 
 package onet.lobby.v1;
 
+import "onet/common/v1/common_types.proto";
+import "onet/lobby/v1/lobby_public.proto";
+
 option csharp_namespace = "Onet.Lobby.V1";
 option java_multiple_files = true;
 option java_outer_classname = "LobbyProto";
@@ -12,9 +15,62 @@ option java_package = "com.onet.lobby.v1";
 // ──────────────────────────────────────────────
 
 service LobbyService {
+  // 소셜 로그인 수단 연동. 게스트 계정이면 게스트 수단 비활성
+  rpc LinkAuthProvider(LinkAuthProviderRequest) returns (LinkAuthProviderResponse);
+
+  // 로그인 수단 해제. 마지막 수단은 불가
+  rpc UnlinkAuthProvider(UnlinkAuthProviderRequest) returns (UnlinkAuthProviderResponse);
+
+  // 연동된 로그인 수단 목록 (활성만)
+  rpc ListAuthProviders(ListAuthProvidersRequest) returns (ListAuthProvidersResponse);
+
+  // 로그아웃 (세션 · refresh token 폐기)
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+
   // 닉네임 설정.
   rpc SetNickname(SetNicknameRequest) returns (SetNicknameResponse);
 }
+
+// 연동된 로그인 수단 1개
+message LinkedAuthProvider {
+  onet.common.v1.AuthProvider provider = 1;
+  int64 linked_at_unix_ms = 2;
+  int64 last_login_at_unix_ms = 3;
+}
+
+// ──────────────────────────────────────────────
+// LinkAuthProvider · UnlinkAuthProvider · ListAuthProviders
+// ──────────────────────────────────────────────
+
+message LinkAuthProviderRequest {
+  SocialCredential credential = 1;
+}
+
+message LinkAuthProviderResponse {
+  repeated LinkedAuthProvider auth_providers = 1;
+}
+
+message UnlinkAuthProviderRequest {
+  onet.common.v1.AuthProvider provider = 1;
+}
+
+message UnlinkAuthProviderResponse {
+  repeated LinkedAuthProvider auth_providers = 1;
+}
+
+message ListAuthProvidersRequest {}
+
+message ListAuthProvidersResponse {
+  repeated LinkedAuthProvider auth_providers = 1;
+}
+
+// ──────────────────────────────────────────────
+// Logout
+// ──────────────────────────────────────────────
+
+message LogoutRequest {}
+
+message LogoutResponse {}
 
 // ──────────────────────────────────────────────
 // SetNickname
@@ -26,4 +82,6 @@ message SetNicknameRequest {
 
 message SetNicknameResponse {
   string nickname = 1;
+  string lobby_token = 2;                       // 새 닉네임이 담긴 access token (즉시 교체, refresh_token 은 그대로)
+  int64 lobby_token_expires_at_unix_ms = 3;
 }

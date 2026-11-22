@@ -30,6 +30,19 @@ enum ErrorCode {
   ERROR_CODE_ITEM_CONDITION_NOT_MET = 20007;  // 아이템 발동 조건 미달 (예: 후크의 갈고리 = 상대 점령 5곳 미만). 소모 X
 
   // 로비
-  ERROR_CODE_INVALID_CREDENTIALS = 30000;
+  ERROR_CODE_INVALID_CREDENTIALS = 30000;        // 로그인 자격 무효 (서명 · 대상 앱 · 만료 · nonce · 게스트 키 불일치). 공급자 SDK 로그인부터 재시도
   ERROR_CODE_ROOM_FULL = 30001;
+  ERROR_CODE_AUTH_PROVIDER_UNAVAILABLE = 30002;  // 공급자 검증 서버 응답 실패. 같은 자격으로 재시도 가능
+  ERROR_CODE_AUTH_DISABLED = 30003;              // 비활성 로그인 수단 (소셜 연동으로 대체된 게스트). ErrorDetail.auth_providers = 로그인 가능한 공급자
+  ERROR_CODE_ACCOUNT_ALREADY_LINKED = 30004;     // 연동하려는 소셜 계정이 다른 플레이어에 연동됨. ErrorDetail.linked_account = 그 계정 요약
+  ERROR_CODE_PROVIDER_ALREADY_LINKED = 30005;    // 이 플레이어에 같은 공급자가 이미 연동됨 (다른 계정)
+  ERROR_CODE_CANNOT_UNLINK_LAST = 30006;         // 마지막 로그인 수단 해제 불가
+  ERROR_CODE_ACCOUNT_RESTRICTED = 30007;         // 제재 중. ErrorDetail.restriction
+  ERROR_CODE_ACCOUNT_WITHDRAWING = 30008;        // 탈퇴 유예 중 (철회 전 로그인 외 요청 불가)
+  ERROR_CODE_SESSION_REPLACED = 30009;           // 다른 기기 로그인으로 세션 종료. 자동 재로그인 금지
+  ERROR_CODE_INVALID_REFRESH_TOKEN = 30010;      // refresh token 무효 / 만료 / 재사용 감지. 로그인부터 재시도
+  ERROR_CODE_TOO_MANY_REQUESTS = 30011;          // 요청 빈도 초과 (예: CreateGuest IP당 기간 내 횟수). 잠시 후 재시도
+  ERROR_CODE_INVALID_PROOF_OF_WORK = 30012;      // CreateGuest 작업 증명 실패 (nonce 만료 · 재사용 · 답 불일치). GetLoginNonce 부터 재시도
+  ERROR_CODE_NICKNAME_UNAVAILABLE = 30013;       // 사용 중이거나 최근 반환돼 잠긴 닉네임 (대소문자 무시 비교). 다른 닉네임 입력
+  ERROR_CODE_NICKNAME_CHANGE_COOLDOWN = 30014;   // 닉네임 변경 쿨다운 중. ErrorDetail.nickname_change_available_at_unix_ms = 변경 가능 시각
 }

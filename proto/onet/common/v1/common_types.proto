@@ -41,3 +41,12 @@ enum ItemActivation {
   ITEM_ACTIVATION_SELECT_BLOCK_PAIR = 2;    // 블록 2칸 터치 (targets 2개)
   ITEM_ACTIVATION_AUTO_ACTIVE = 3;          // 즉시 발동 (targets 비움)
 }
+
+// 로그인 공급자 (로비 로그인 · 연동)
+enum AuthProvider {
+  AUTH_PROVIDER_UNSPECIFIED = 0;
+  AUTH_PROVIDER_GUEST = 1;   // 서버 발급 게스트 키
+  AUTH_PROVIDER_GOOGLE = 2;  // Sign in with Google (ID token)
+  AUTH_PROVIDER_APPLE = 3;   // Sign in with Apple (identity token)
+  AUTH_PROVIDER_STEAM = 4;   // Steam Web API 티켓
+}

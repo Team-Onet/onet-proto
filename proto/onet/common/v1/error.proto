@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package onet.common.v1;
 
+import "onet/common/v1/common_types.proto";
 import "onet/common/v1/error_code.proto";
 
 option csharp_namespace = "Onet.Common.V1";
@@ -12,4 +13,45 @@ option java_package = "com.onet.common.v1";
 message ErrorDetail {
   ErrorCode code = 1;
   string message = 2;
+  // 에러 코드별 부가 정보. 해당 코드에서만 세팅
+  oneof detail {
+    RestrictionDetail restriction = 3;        // ACCOUNT_RESTRICTED
+    AuthProvidersDetail auth_providers = 4;   // AUTH_DISABLED
+    LinkedAccountDetail linked_account = 5;   // ACCOUNT_ALREADY_LINKED
+    int64 nickname_change_available_at_unix_ms = 6;   // NICKNAME_CHANGE_COOLDOWN
+  }
+}
+
+// 제재 정보. 사유 문구는 클라가 reason 으로 현지화
+message RestrictionDetail {
+  int64 restriction_id = 1;     // 문의 번호
+  RestrictionKind kind = 2;
+  RestrictionReason reason = 3;
+  int64 ends_at_unix_ms = 4;    // 0 = 영구
+}
+
+// 이 계정으로 로그인 가능한 공급자
+message AuthProvidersDetail {
+  repeated AuthProvider providers = 1;
+}
+
+// 연동하려는 소셜 계정이 이미 속한 다른 계정 요약 (전환 / 취소 선택 화면)
+message LinkedAccountDetail {
+  string nickname = 1;
+  int64 last_login_at_unix_ms = 2;
+}
+
+enum RestrictionKind {
+  RESTRICTION_KIND_UNSPECIFIED = 0;
+  RESTRICTION_KIND_LOGIN = 1;            // 로그인 정지
+  RESTRICTION_KIND_MATCH = 2;            // 매칭 참여 정지
+  RESTRICTION_KIND_NICKNAME_CHANGE = 3;  // 닉네임 변경 정지
+}
+
+enum RestrictionReason {
+  RESTRICTION_REASON_UNSPECIFIED = 0;
+  RESTRICTION_REASON_CHEAT = 1;          // 부정 플레이 (치트 · 버그 악용 · 다계정)
+  RESTRICTION_REASON_ABUSE = 2;          // 비매너 (욕설 · 고의 이탈 · 부적절 닉네임)
+  RESTRICTION_REASON_PAYMENT_FRAUD = 3;  // 결제 악용
+  RESTRICTION_REASON_ETC = 4;            // 기타
 }

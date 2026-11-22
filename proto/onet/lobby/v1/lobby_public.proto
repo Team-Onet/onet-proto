@@ -12,33 +12,78 @@ option java_package = "com.onet.lobby.v1";
 // ──────────────────────────────────────────────
 
 service LobbyPublicService {
-  // 게스트 로그인. deviceId 기반으로 계정 생성 또는 조회.
-  // 발급된 lobby_token 을 매치메이커 요청 시 사용.
-  rpc GuestLogin(GuestLoginRequest) returns (GuestLoginResponse);
+  // Google · Apple 로그인 직전 1회용 nonce 발급. SDK 로그인 요청에 넣어 ID token 에 서명되게 함
+  rpc GetLoginNonce(GetLoginNonceRequest) returns (GetLoginNonceResponse);
 
-  // 액세스 토큰 갱신. refresh_token 으로 새 lobby_token 발급.
-  // 세션 TTL 도 함께 연장됨.
+  // 게스트 계정 생성. 발급된 guest_key 를 보안 저장소에 저장한 뒤 Login
+  rpc CreateGuest(CreateGuestRequest) returns (CreateGuestResponse);
+
+  // 로그인. 소셜 계정은 처음이면 계정 생성. 성공 시 이전 기기 세션 종료 (단일 세션)
+  rpc Login(LoginRequest) returns (LoginResponse);
+
+  // refresh token 으로 토큰 재발급. 매번 새 refresh token (이전 것 폐기)
   rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
 
   // 스펙 데이터 조회. 요청한 spec_names 에 해당하는 데이터를 JSON string 으로 반환.
   rpc GetSpec(GetSpecRequest) returns (GetSpecResponse);
 }
 
-// ──────────────────────────────────────────────
-// GuestLogin
-// ──────────────────────────────────────────────
-
-message GuestLoginRequest {
-  string device_id = 1;  // 디바이스 고유 식별자
+// 소셜 로그인 자격 (Login · LinkAuthProvider 공용)
+message SocialCredential {
+  oneof credential {
+    string google_id_token = 1;       // Sign in with Google ID token. 요청 nonce = GetLoginNonce 값 그대로
+    string apple_identity_token = 2;  // Sign in with Apple identity token. 요청 nonce = GetLoginNonce 값의 SHA-256 hex
+    string steam_ticket = 3;          // Steamworks GetAuthTicketForWebApi("onet-lobby") 티켓 (hex)
+  }
 }
 
-message GuestLoginResponse {
-  string player_id     = 1;  // 서버 발급 플레이어 ID
-  string nickname      = 2;  // 현재 닉네임 (미설정 시 빈 문자열)
-  int32  level         = 3;  // 플레이어 레벨
-  string lobby_token   = 4;  // access token (JWT, 단기) — API 인증에 사용
-  bool   is_new        = 5;  // 최초 생성 계정 여부
-  string refresh_token = 6;  // refresh token (단기 만료 시 재발급용)
+// ──────────────────────────────────────────────
+// GetLoginNonce
+// ──────────────────────────────────────────────
+
+message GetLoginNonceRequest {}
+
+message GetLoginNonceResponse {
+  string nonce = 1;
+  int64 expires_at_unix_ms = 2;
+  int32 pow_difficulty = 3;   // CreateGuest 계산 퍼즐 난이도. SHA-256(nonce:counter) 결과 앞 N비트가 0인 counter 를 찾을 것 (1 오를 때마다 계산량 2배, 운영 18 ≈ 0.5초 미만). 0 = counter 0 그대로 전송
+}
+
+// ──────────────────────────────────────────────
+// CreateGuest
+// ──────────────────────────────────────────────
+
+// 작업 증명: SHA-256(UTF-8(nonce + ":" + counter 10진수)) 앞 pow_difficulty 비트가 0 인 counter
+message CreateGuestRequest {
+  string nonce = 1;    // GetLoginNonce 값 (1회용, 실패해도 소비)
+  int64 counter = 2;   // 작업 증명 답 (0 이상)
+}
+
+message CreateGuestResponse {
+  string guest_key = 1;
+}
+
+// ──────────────────────────────────────────────
+// Login
+// ──────────────────────────────────────────────
+
+message LoginRequest {
+  oneof credential {
+    string guest_key = 1;
+    SocialCredential social = 2;
+  }
+}
+
+message LoginResponse {
+  string player_id = 1;                         // 플레이어 식별자 (토큰 · 서버 간)
+  string player_code = 2;                       // 화면 표시 UID (CS 문의 · 친구 검색)
+  string nickname = 3;
+  bool needs_nickname = 4;                      // 닉네임 미설정 (임시 닉네임 상태)
+  string lobby_token = 5;                       // access token (JWT)
+  string refresh_token = 6;
+  int64 lobby_token_expires_at_unix_ms = 7;
+  bool is_new = 8;                              // 이번 로그인으로 생성된 계정 (소셜 첫 로그인)
+  int64 withdrawal_scheduled_at_unix_ms = 9;    // 탈퇴 유예 중이면 완료 예정 시각, 아니면 0
 }
 
 // ──────────────────────────────────────────────
@@ -46,11 +91,13 @@ message GuestLoginResponse {
 // ──────────────────────────────────────────────
 
 message RefreshTokenRequest {
-  string refresh_token = 1;  // 로그인 시 발급받은 refresh token
+  string refresh_token = 1;
 }
 
 message RefreshTokenResponse {
-  string lobby_token = 1;  // 새로 발급된 access token (JWT)
+  string lobby_token = 1;
+  string refresh_token = 2;                     // 새 refresh token. 이전 값은 30초 유예 후 무효
+  int64 lobby_token_expires_at_unix_ms = 3;
 }
 
 // ──────────────────────────────────────────────
