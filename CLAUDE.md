@@ -23,6 +23,9 @@ proto/onet/
   battle/v1/
     battle.proto         — BattleService, 전체 메시지 정의
     battle_types.proto   — GameEndReason, PlayerLeftReason 등 enum
+  spec/v1/
+    client_spec.proto    — ClientSpec (클라 공유 게임 데이터 묶음 client.pb)
+    server_spec.proto    — ServerSpec (서버 전용 묶음 server.pb, 클라 미사용)
 ```
 
 ## Cross-package 참조

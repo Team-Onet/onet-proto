@@ -23,9 +23,6 @@ service LobbyPublicService {
 
   // refresh token 으로 토큰 재발급. 매번 새 refresh token (이전 것 폐기)
   rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
-
-  // 스펙 데이터 조회. 요청한 spec_names 에 해당하는 데이터를 JSON string 으로 반환.
-  rpc GetSpec(GetSpecRequest) returns (GetSpecResponse);
 }
 
 // 소셜 로그인 자격 (Login · LinkAuthProvider 공용)
@@ -98,17 +95,4 @@ message RefreshTokenResponse {
   string lobby_token = 1;
   string refresh_token = 2;                     // 새 refresh token. 이전 값은 30초 유예 후 무효
   int64 lobby_token_expires_at_unix_ms = 3;
-}
-
-// ──────────────────────────────────────────────
-// GetSpec
-// ──────────────────────────────────────────────
-
-message GetSpecRequest {
-  repeated string spec_names = 1;  // 요청할 스펙 이름 목록 (예: ["art", "option"])
-}
-
-message GetSpecResponse {
-  // spec name → JSON string (배열 또는 객체)
-  map<string, string> specs = 1;
 }

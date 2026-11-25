@@ -1,0 +1,135 @@
+syntax = "proto3";
+
+package onet.spec.v1;
+
+import "onet/common/v1/common_types.proto";
+
+option csharp_namespace = "Onet.Spec.V1";
+option java_multiple_files = true;
+option java_outer_classname = "ServerSpecProto";
+option java_package = "com.onet.spec.v1";
+
+// 서버 전용 스펙 묶음 (server.pb, 비공개). 클라는 이 스키마를 쓰지 않음
+message ServerSpec {
+  repeated ModeSpec modes = 1;
+  repeated BotDifficultySpec bot_difficulties = 2;
+  int64 match_timeout_ms = 3;  // PvP 상대 대기 상한 → MATCH_NOT_FOUND
+  EffectDelays effect_delays = 4;
+  string version = 5;          // 묶음 버전 (번들러가 채움, 원본 json 에 쓰지 않음). client.pb 와 같은 값
+}
+
+// 모드별 한 판 규칙. 인원 · 팀 구성은 모드 정의 (코드)
+message ModeSpec {
+  onet.common.v1.MatchMode mode = 1;
+  int64 rejoin_grace_ms = 2;    // 재접속 유예. 0 = 재접속 불가 (끊기면 즉시 패배)
+  TurnSpec turn = 3;
+  int64 tempo_window_ms = 4;    // 턴 시작 (턴 규칙 능력 개시 연출 후) 부터 이 안에 첫 매칭 = 템포 달성
+  int32 fever_remaining_pct = 5; // 남은 블록 비율이 이 % 이하가 되면 피버
+  AfkSpec afk = 6;
+  SpecialBlockModeSpec special_block = 7;
+  CatchUpSpec catch_up = 8;
+  ConveyorSpec conveyor = 9;
+  BoardObjectSpec board_object = 10;
+}
+
+// 턴 시간 = 남은 블록 비율로 max → min 선형, 피버면 감소분 차감
+message TurnSpec {
+  int64 max_turn_ms = 1;           // 블록 가득 (비율 1.0)
+  int64 min_turn_ms = 2;           // 블록 거의 없음 (비율 0.0)
+  int64 fever_reduction_ms = 3;
+  int64 floor_ms = 4;              // 턴 규칙 능력 개시 연출 합산 후 하한
+  int32 shuffle_after_timeouts = 5; // 연속 타임아웃 이 횟수마다 강제 셔플
+}
+
+message AfkSpec {
+  bool auto_match = 1;               // 턴 타임아웃 시 자동매칭
+  AfkForfeit forfeit = 2;
+  int32 forfeit_turn_limit = 3;      // BY_TURNS: 연속 미조작 턴 수
+  int64 forfeit_timeout_ms = 4;      // BY_TIME: 마지막 조작 이후 경과
+  int64 auto_match_window_ms = 5;    // 게임 시작 후 이 시간 지나면 자동매칭 off. 0 = 끝까지
+  int64 hard_timeout_ms = 6;         // 게임 최대 길이. 0 = 상한 없음
+}
+
+enum AfkForfeit {
+  AFK_FORFEIT_UNSPECIFIED = 0;
+  AFK_FORFEIT_NONE = 1;      // 기권 판정 없음
+  AFK_FORFEIT_BY_TURNS = 2;  // 연속 미조작 턴 수
+  AFK_FORFEIT_BY_TIME = 3;   // 마지막 조작 이후 시간 (최초 감지 턴 유예)
+}
+
+message SpecialBlockModeSpec {
+  bool enabled = 1;
+  repeated onet.common.v1.AbilityType candidates = 2;  // 등장 후보 (블록 능력)
+  int32 type_variety_count = 3;                        // 한 판 등장 종류 수 (후보 중 랜덤)
+  int32 tile_count_per_type = 4;                       // 종류당 블록 수
+}
+
+// 캐치업: 격차가 벌어지면 불리팀에 조커 턴 1회 지급
+message CatchUpSpec {
+  bool enabled = 1;
+  int32 watch_start_pct = 2;   // 블록 제거 진행률 이 % 부터 감지
+  int32 watch_end_pct = 3;     // 이 % 부터 감지 종료 + 대기 킥오프 폐기
+  int32 disadvantage_pct = 4;  // 유리팀 점령 비율 이 % 이상 = 불리팀 킥오프
+  int32 recovery_pct = 5;      // 불리팀 점령 비율 이 % 회복 = 킥오프 취소
+  int32 grant_own_turn = 6;    // 킥오프 후 불리팀 이 번째 본인 턴 시작 시 지급
+}
+
+message ConveyorSpec {
+  bool enabled = 1;
+  repeated ConveyorShape shapes = 2;  // 모양 후보 (판마다 1개 랜덤)
+}
+
+enum ConveyorShape {
+  CONVEYOR_SHAPE_UNSPECIFIED = 0;
+  CONVEYOR_SHAPE_RING = 1;    // 전체 테두리
+  CONVEYOR_SHAPE_ROW = 2;     // 맨 위 · 아래 행
+  CONVEYOR_SHAPE_COLUMN = 3;  // 맨 왼 · 오른 열
+  CONVEYOR_SHAPE_CORNER = 4;  // 인접 두 변
+}
+
+// 보드 오브젝트 (보너스 상자)
+message BoardObjectSpec {
+  bool enabled = 1;
+  int32 min_box_count = 2;
+  int32 max_box_count = 3;
+  int32 min_box_hp = 4;     // 경로 통과 1회 = 1 감소
+  int32 max_box_hp = 5;
+  repeated onet.common.v1.AbilityType bonus_box_rewards = 6;  // 파괴 보상 후보 (블록 능력, SHUFFLE 제외)
+}
+
+// 봇 난이도 단계. min_level 이상 플레이어에게 적용
+message BotDifficultySpec {
+  int32 min_level = 1;
+  int32 move_rate = 2;       // 수를 두는 확률 (%)
+  int32 best_move_rate = 3;  // 최선수 확률 (%)
+  int64 min_think_ms = 4;
+  int64 max_think_ms = 5;
+}
+
+// 연출 길이 (ms) = 서버 입력 잠금 · 후속 흐름 지연. 클라는 각 메시지 effects[].delay_ms 로 받아 재생 (묶음 미참조)
+message EffectDelays {
+  // 매칭: (base + 점령 칸 수 * per_slot) * weight, max 로 클램프
+  int64 block_matched_base_ms = 1;
+  int64 block_matched_per_slot_ms = 2;
+  int64 block_matched_max_ms = 3;
+  double block_matched_weight = 4;
+
+  int64 board_shuffled_ms = 5;
+  int64 turn_timeout_ms = 6;       // 타임아웃 / AFK 기권 후 다음 단계까지 대기 (연출 없음)
+  int64 fever_activated_ms = 7;
+
+  int64 bonus_ms = 8;
+  int64 trap_sprung_ms = 9;
+  int64 fortify_ms = 10;
+  int64 thief_ms = 11;
+  int64 bomb_ms = 12;
+  int64 joker_activated_ms = 13;
+  int64 joker_matched_ms = 14;
+  int64 conveyor_shifted_ms = 15;
+  int64 bonus_box_broken_ms = 16;
+
+  int64 trap_set_ms = 17;
+  int64 eraser_ms = 18;
+  int64 hook_ms = 19;
+  int64 ink_ms = 20;
+}

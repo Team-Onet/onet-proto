@@ -15,7 +15,7 @@ enum GameEndReason {
   GAME_END_REASON_TURN_LIMIT_EXCEEDED = 4; // 확보. 현재 서버에서 발동 X (턴 카운트 기반 자동 종료 정책 재도입 시 사용)
   GAME_END_REASON_ABORTED = 5;             // 시스템 오류로 강제 종료 (셔플 불가 등)
   GAME_END_REASON_AFK_FORFEIT = 6;         // 연속 미조작으로 자동 기권 처리
-  GAME_END_REASON_GAME_TIME_EXCEEDED = 7;  // 게임 시작 후 최대 시간 (AfkPolicy.hardTimeoutSec) 초과로 자동 종료
+  GAME_END_REASON_GAME_TIME_EXCEEDED = 7;  // 게임 시작 후 최대 시간 (스펙 ModeSpec.afk.hard_timeout_ms) 초과로 자동 종료
 }
 
 enum PlayerLeftReason {
