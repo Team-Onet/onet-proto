@@ -14,6 +14,7 @@ enum ErrorCode {
   ERROR_CODE_INTERNAL = 1;
   ERROR_CODE_UNAUTHENTICATED = 2;
   ERROR_CODE_INVALID_PARAM_VALUE = 3;
+  ERROR_CODE_SPEC_OUTDATED = 4;   // 클라 스펙 묶음 버전 (헤더 x-onet-spec-version) 없음 · 활성 버전과 다름. GetClientManifest 재조회 → 다운로드 → 재시도
 
   // 매치메이커
   ERROR_CODE_INVALID_LOBBY_TOKEN = 10000;

@@ -23,6 +23,9 @@ service LobbyPublicService {
 
   // refresh token 으로 토큰 재발급. 매번 새 refresh token (이전 것 폐기)
   rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+
+  // 활성 스펙 묶음 (client.pb) 버전 · 다운로드 정보 + 플랫폼 최소 앱 버전
+  rpc GetClientManifest(GetClientManifestRequest) returns (GetClientManifestResponse);
 }
 
 // 소셜 로그인 자격 (Login · LinkAuthProvider 공용)
@@ -95,4 +98,19 @@ message RefreshTokenResponse {
   string lobby_token = 1;
   string refresh_token = 2;                     // 새 refresh token. 이전 값은 30초 유예 후 무효
   int64 lobby_token_expires_at_unix_ms = 3;
+}
+
+// ──────────────────────────────────────────────
+// GetClientManifest
+// ──────────────────────────────────────────────
+
+message GetClientManifestRequest {
+  string platform = 1;          // android / ios / web / editor (x-onet-platform 과 같은 값)
+}
+
+message GetClientManifestResponse {
+  string spec_version = 1;      // 활성 묶음 버전 (12자 hex). 보유 버전과 다르면 다운로드
+  string spec_url = 2;          // client.pb 다운로드 URL (HTTPS). 그대로 사용 (직접 조립 X)
+  string spec_sha256 = 3;       // client.pb 파일 SHA-256 (소문자 hex 64자). 다르면 버리고 기존 묶음 유지
+  string min_app_version = 4;   // 이 플랫폼 최소 앱 버전 (X.Y.Z). 앱 버전 미만 = 스토어 업데이트 안내. 빈 값 = 제한 없음
 }
