@@ -32,12 +32,13 @@ message ModeSpec {
   BoardObjectSpec board_object = 10;
 }
 
-// 턴 시간 = 남은 블록 비율로 max → min 선형, 피버면 감소분 차감
+// 턴 시간 = 남은 블록 비율로 max → min 선형, 피버면 감소분 차감 + 턴 규칙 능력 개시 연출 합산 → min 미만이면 min
 message TurnSpec {
+  reserved 4;
+  reserved "floor_ms";
   int64 max_turn_ms = 1;           // 블록 가득 (비율 1.0)
-  int64 min_turn_ms = 2;           // 블록 거의 없음 (비율 0.0)
+  int64 min_turn_ms = 2;           // 블록 거의 없음 (비율 0.0) = 최종 하한 (피버 차감 후에도)
   int64 fever_reduction_ms = 3;
-  int64 floor_ms = 4;              // 턴 규칙 능력 개시 연출 합산 후 하한
   int32 shuffle_after_timeouts = 5; // 연속 타임아웃 이 횟수마다 강제 셔플
 }
 
@@ -47,7 +48,7 @@ message AfkSpec {
   int32 forfeit_turn_limit = 3;      // BY_TURNS: 연속 미조작 턴 수
   int64 forfeit_timeout_ms = 4;      // BY_TIME: 마지막 조작 이후 경과
   int64 auto_match_window_ms = 5;    // 게임 시작 후 이 시간 지나면 자동매칭 off. 0 = 끝까지
-  int64 hard_timeout_ms = 6;         // 게임 최대 길이. 0 = 상한 없음
+  int64 hard_timeout_ms = 6;         // 게임 최대 길이. + rejoin_grace_ms ≤ 배틀 토큰 유효 시간
 }
 
 enum AfkForfeit {
@@ -57,11 +58,13 @@ enum AfkForfeit {
   AFK_FORFEIT_BY_TIME = 3;   // 마지막 조작 이후 시간 (최초 감지 턴 유예)
 }
 
+// 종류당 블록 수 = 1 (코드 고정, 연쇄 검증 범위)
 message SpecialBlockModeSpec {
+  reserved 4;
+  reserved "tile_count_per_type";
   bool enabled = 1;
   repeated onet.common.v1.AbilityType candidates = 2;  // 등장 후보 (블록 능력)
-  int32 type_variety_count = 3;                        // 한 판 등장 종류 수 (후보 중 랜덤)
-  int32 tile_count_per_type = 4;                       // 종류당 블록 수
+  int32 type_variety_count = 3;                        // 한 판 등장 종류 수 (후보 중 랜덤, 최대 3)
 }
 
 // 캐치업: 격차가 벌어지면 불리팀에 조커 턴 1회 지급

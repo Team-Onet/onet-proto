@@ -21,7 +21,7 @@ message ClientSpec {
 // 맵 1건 = 블록 배치 + 보드 구성 튜닝 (그림 종류 · 그림당 쌍 · 칸 점수)
 message MapSpec {
   int32 id = 1;
-  int32 map_type = 2;           // 사이즈 그룹 (매칭 요청 map_type)
+  int32 map_type = 2;           // 사이즈 그룹 (매칭 요청 map_type) = rows 긴 변 (번들러가 채움, 원본 json 에 쓰지 않음)
   string map_label = 3;         // snake_case 운영 식별자
   repeated string rows = 4;     // 위 → 아래 행. '1' = 블록 칸, '0' = 빈 칸. 행 수 = 높이, 글자 수 = 너비
   int32 max_art_types = 5;      // 한 판에 쓰는 그림 종류 상한 (블록 칸 / 2 와 작은 쪽)
